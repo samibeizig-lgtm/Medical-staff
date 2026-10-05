@@ -1,0 +1,4 @@
+# Aucun script ne doit être exécuté depuis le dossier d'upload
+<FilesMatch "\.(php|phtml|php\d|phar|pl|py|cgi|sh)$">
+    Require all denied
+</FilesMatch>

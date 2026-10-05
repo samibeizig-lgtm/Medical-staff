@@ -1,0 +1,11 @@
+{
+    "name": "medical-staff/platform",
+    "description": "Medical Staff – plateforme tunisienne de recrutement médical et paramédical",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1",
+        "ext-pdo": "*",
+        "dompdf/dompdf": "^3.0"
+    }
+}

@@ -1,0 +1,95 @@
+<?php
+/** Données de référence de la plateforme. */
+
+const GOUVERNORATS = [
+    'Ariana', 'Béja', 'Ben Arous', 'Bizerte', 'Gabès', 'Gafsa', 'Jendouba', 'Kairouan',
+    'Kasserine', 'Kébili', 'Le Kef', 'Mahdia', 'La Manouba', 'Médenine', 'Monastir', 'Nabeul',
+    'Sfax', 'Sidi Bouzid', 'Siliana', 'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan',
+];
+
+const POSTES = [
+    'Infirmier(ère) polyvalent(e)',
+    'Infirmier(ère) de bloc opératoire',
+    'Infirmier(ère) en réanimation',
+    'Infirmier(ère) aux urgences',
+    'Infirmier(ère) en pédiatrie',
+    'Sage-femme',
+    'Technicien(ne) supérieur(e) en anesthésie-réanimation',
+    'Technicien(ne) en imagerie médicale (radiologie)',
+    'Technicien(ne) de laboratoire / biologie médicale',
+    'Kinésithérapeute',
+    'Orthophoniste',
+    'Orthoptiste',
+    'Ergothérapeute',
+    'Diététicien(ne) / Nutritionniste',
+    'Préparateur(trice) en pharmacie',
+    'Aide-soignant(e)',
+    'Auxiliaire de puériculture',
+    'Technicien(ne) en hygiène hospitalière',
+    'Technicien(ne) en instrumentation',
+    'Opticien(ne)',
+    'Prothésiste dentaire',
+    'Assistant(e) dentaire',
+    'Psychomotricien(ne)',
+    'Secrétaire médical(e)',
+    'Ambulancier(ère)',
+];
+
+const TYPES_CONTRAT = ['CDI', 'CDD', 'Stage', 'SIVP', 'Intérim', 'Vacation', 'Temps partiel'];
+
+const TYPES_ETABLISSEMENT = [
+    'Clinique privée', 'Hôpital public', 'Polyclinique', 'Cabinet médical', 'Cabinet dentaire',
+    'Laboratoire d\'analyses', 'Centre d\'imagerie', 'Centre de dialyse', 'Pharmacie',
+    'Centre de rééducation', 'Maison de retraite', 'Autre',
+];
+
+const DIPLOMES = [
+    'Licence en sciences infirmières',
+    'Licence en sciences obstétricales (sage-femme)',
+    'Licence en anesthésie-réanimation',
+    'Licence en imagerie médicale et radiothérapie',
+    'Licence en biologie médicale / analyses',
+    'Licence en kinésithérapie',
+    'Licence en nutrition humaine',
+    'Licence en orthophonie',
+    'Licence en ergothérapie',
+    'Licence en instrumentation',
+    'Master professionnel paramédical',
+    'BTS / Brevet de technicien supérieur paramédical',
+    'Diplôme d\'aide-soignant',
+    'Brevet professionnel (BTP)',
+    'Autre diplôme',
+];
+
+const MENTIONS = ['Passable', 'Assez bien', 'Bien', 'Très bien', 'Excellent'];
+
+const DISPONIBILITES = ['Immédiate', 'Sous 15 jours', 'Sous 1 mois', 'Sous 2 mois', 'Sous 3 mois ou plus'];
+
+const LANGUES = ['Arabe', 'Français', 'Anglais', 'Allemand', 'Italien', 'Espagnol', 'Russe', 'Turc', 'Chinois'];
+
+const NIVEAUX_LANGUE = ['Notions', 'Intermédiaire', 'Courant', 'Bilingue', 'Langue maternelle'];
+
+const COMPETENCES_PARAMEDICALES = [
+    'Soins infirmiers généraux', 'Pose de perfusion', 'Prélèvements sanguins', 'Pansements complexes',
+    'Gestion de la douleur', 'Surveillance post-opératoire', 'Soins intensifs', 'Réanimation cardio-pulmonaire',
+    'Gestes d\'urgence (AFGSU)', 'Triage aux urgences', 'Préparation et administration des médicaments',
+    'Hygiène hospitalière', 'Asepsie et stérilisation', 'Instrumentation chirurgicale', 'Bloc opératoire',
+    'Anesthésie générale', 'Anesthésie locorégionale', 'Intubation', 'Ventilation mécanique',
+    'Monitorage hémodynamique', 'Accouchement eutocique', 'Suivi de grossesse', 'Échographie obstétricale',
+    'Soins néonataux', 'Allaitement maternel', 'Pédiatrie', 'Gériatrie', 'Oncologie', 'Dialyse / hémodialyse',
+    'Cardiologie', 'Électrocardiogramme (ECG)', 'Radiologie conventionnelle', 'Scanner', 'IRM', 'Mammographie',
+    'Radioprotection', 'Analyses biochimiques', 'Hématologie', 'Microbiologie', 'Bactériologie',
+    'Immunologie', 'Contrôle qualité laboratoire', 'Rééducation fonctionnelle', 'Kinésithérapie respiratoire',
+    'Massothérapie', 'Électrothérapie', 'Nutrition clinique', 'Éducation thérapeutique du patient',
+    'Dossier patient informatisé', 'Logiciel hospitalier', 'Gestion des stocks pharmaceutiques',
+    'Accueil et relation patient', 'Travail en équipe pluridisciplinaire', 'Gestion du stress',
+    'Encadrement d\'équipe', 'Transmissions ciblées', 'Soins palliatifs', 'Santé mentale',
+    'Prise en charge du diabète', 'Vaccination', 'Ambulance et transport sanitaire',
+];
+
+/** Rubriques mises en avant sur l'accueil */
+const RUBRIQUES = [
+    ['icon' => 'fa-user-graduate', 'titre' => 'Jeunes diplômés', 'texte' => 'Premier emploi, stage ou SIVP : lancez votre carrière dans les meilleurs établissements.', 'q' => ''],
+    ['icon' => 'fa-baby', 'titre' => 'Sages-femmes', 'texte' => 'Maternités, cliniques et centres de santé recherchent des sages-femmes qualifiées.', 'q' => 'Sage-femme'],
+    ['icon' => 'fa-syringe', 'titre' => 'Techniciens anesthésistes', 'texte' => 'Blocs opératoires et services de réanimation recrutent en continu.', 'q' => 'Technicien(ne) supérieur(e) en anesthésie-réanimation'],
+];
