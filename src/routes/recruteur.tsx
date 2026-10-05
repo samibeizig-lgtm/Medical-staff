@@ -4,7 +4,9 @@ import type { AppEnv, Row } from '../types';
 import { all, NOW, one, run, TODAY, val } from '../lib/db';
 import { field, flash, loginUser, origin, q, readForm, redirect, requireRole, type Ctx } from '../lib/http';
 import { createUser, loginPage, validatePassword } from '../lib/auth';
-import { abonnementActif, candidatFull, candidatsFull, currentRecruteur, peutVoirCv, SQL_EXP_MOIS } from '../lib/models';
+import { abonnementActif, candidatFull, candidatsFull, currentRecruteur, dernierEntretienIa, peutVoirCv, scoresCommunication, SQL_EXP_MOIS } from '../lib/models';
+import { CRITERES, CRITERE_KEYS } from '../lib/entretien-ia';
+import { BadgeCommunication, ResultatEntretienIa } from '../views/entretien-ia';
 import { DIPLOMES, GOUVERNORATS, POSTES, TYPES_CONTRAT, TYPES_ETABLISSEMENT, inList } from '../lib/data';
 import { competencesList, esc, formatNombre, intOrNull, isEmail, money, refCandidat, salaireRange } from '../lib/format';
 import { addDays, addYears, dateFr, dateLongue, fmtDateTime, isValidDate, parseLocal, plageHoraire, today, tunis } from '../lib/dates';
@@ -457,6 +459,7 @@ r.get('/cvtheque', async (c) => {
             (SELECT 1 FROM tests_personnalite t WHERE t.candidat_id = c.id) AS has_test
      FROM candidats c WHERE ${w} ORDER BY c.updated_at DESC, c.id DESC LIMIT ${perPage} OFFSET ${(pg - 1) * perPage}`, ...params);
   const dips = new Map<number, Row[]>();
+  const comm = await scoresCommunication(db, rows.map((x) => x.id));
   if (rows.length) {
     const ids = rows.map((x) => x.id);
     for (const d of await all<Row>(db, `SELECT candidat_id, intitule, date_obtention FROM diplomes WHERE candidat_id IN (${ids.map(() => '?').join(',')}) ORDER BY date_obtention DESC`, ...ids)) {
@@ -486,7 +489,10 @@ r.get('/cvtheque', async (c) => {
                 <div class="d-flex gap-3 align-items-center mb-2">
                   {abo ? <img src={photoUrl(cd.photo)} class="avatar-sm" alt="" /> : <div class="avatar-initials"><i class="fa-solid fa-user"></i></div>}
                   <div><strong>{abo ? `${cd.prenom} ${cd.nom}` : refCandidat(cd.id)}</strong><div class="small text-primary">{cd.poste_recherche}</div></div>
-                  {cd.has_test && <span class="ms-auto badge bg-info-subtle text-info" title="Test de personnalité passé"><i class="fa-solid fa-brain"></i></span>}
+                  <span class="ms-auto d-flex gap-1">
+                    {comm.has(cd.id) && <BadgeCommunication score={comm.get(cd.id)} />}
+                    {cd.has_test && <span class="badge bg-info-subtle text-info" title="Test de personnalité passé"><i class="fa-solid fa-brain"></i></span>}
+                  </span>
                 </div>
                 <ul class="list-unstyled small mb-2">
                   <li><i class="fa-solid fa-briefcase me-2 text-muted"></i>Expérience : <strong>{Math.round((cd.exp_mois / 12) * 10) / 10} an(s)</strong></li>
@@ -535,6 +541,7 @@ r.get('/candidatures', async (c) => {
        FROM candidatures ca JOIN candidats c ON c.id = ca.candidat_id WHERE ca.offre_id = ? ORDER BY ca.created_at DESC`, offreId);
     c.executionCtx.waitUntil(run(db, "UPDATE candidatures SET statut = 'vue' WHERE offre_id = ? AND statut = 'envoyee'", offreId).then(() => undefined));
   }
+  const comm = await scoresCommunication(db, cands.map((x) => x.id));
   return page(c, { title: 'Candidatures' }, (
     <div class="container py-4">
       <h1 class="h3 mb-3"><i class="fa-solid fa-inbox text-primary me-2"></i>Candidatures</h1>
@@ -561,7 +568,7 @@ r.get('/candidatures', async (c) => {
                 <div class="card border-0 shadow-sm mb-2"><div class="card-body d-flex flex-wrap align-items-center gap-3">
                   <img src={photoUrl(cd.photo)} class="avatar-sm" alt="" />
                   <div class="flex-grow-1">
-                    <strong>{cd.prenom} {cd.nom}</strong> <span class="badge text-bg-light border">{refCandidat(cd.id)}</span><br />
+                    <strong>{cd.prenom} {cd.nom}</strong> <span class="badge text-bg-light border">{refCandidat(cd.id)}</span> <BadgeCommunication score={comm.get(cd.id)} /><br />
                     <small class="text-muted">{cd.poste_recherche} · {Math.round((cd.exp_mois / 12) * 10) / 10} an(s) d'exp. · {cd.ville || '—'} · postulé le {dateFr(cd.postule_le)}</small>
                     {cd.entretien_statut && <div class="mt-1">Entretien : <StatutEntretien s={cd.entretien_statut} /></div>}
                   </div>
@@ -604,8 +611,11 @@ r.get('/cv/:id{[0-9]+}', async (c) => {
   const { rec, cand } = res;
   const ct = cand!;
   const offreId = Number(q(c, 'offre')) || 0;
-  const ent = await one<Row>(c.env.DB, `SELECT id FROM entretiens WHERE recruteur_id = ? AND candidat_id = ? ${offreId ? 'AND offre_id = ?' : ''} ORDER BY id DESC LIMIT 1`,
-    ...(offreId ? [rec.id, ct.id, offreId] : [rec.id, ct.id]));
+  const [ent, eia] = await Promise.all([
+    one<Row>(c.env.DB, `SELECT id FROM entretiens WHERE recruteur_id = ? AND candidat_id = ? ${offreId ? 'AND offre_id = ?' : ''} ORDER BY id DESC LIMIT 1`,
+      ...(offreId ? [rec.id, ct.id, offreId] : [rec.id, ct.id])),
+    dernierEntretienIa(c.env.DB, ct.id),
+  ]);
   return page(c, { title: `CV – ${ct.prenom} ${ct.nom}` }, (
     <div class="container py-4">
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
@@ -652,6 +662,9 @@ r.get('/cv/:id{[0-9]+}', async (c) => {
         </div>
         <div class="col-lg-8">
           <CvSections c={ct} />
+          {eia ? <ResultatEntretienIa e={eia} /> : (
+            <div class="alert alert-light border small"><i class="fa-solid fa-microphone-slash me-1"></i>Ce candidat n'a pas encore passé l'entretien IA de communication.</div>
+          )}
           {ct.test && (
             <div class="card border-0 shadow-sm"><div class="card-body">
               <h2 class="h5"><i class="fa-solid fa-brain text-primary me-2"></i>Profil de personnalité</h2>
@@ -670,6 +683,7 @@ r.get('/cv/:id{[0-9]+}/pdf', async (c) => {
   const res = await cvAccess(c);
   if (res instanceof Response) return res;
   const ct = res.cand!;
+  const eia = await dernierEntretienIa(c.env.DB, ct.id);
   const css = `@page{size:A4;margin:14mm 16mm}*{box-sizing:border-box}body{font-family:Poppins,Arial,sans-serif;font-size:11.5px;color:#1f2937;margin:0;background:#eef2f7}
 .sheet{max-width:210mm;margin:16px auto;background:#fff;padding:18mm 16mm;box-shadow:0 4px 20px rgba(0,0,0,.08)}
 .head{display:flex;gap:18px;align-items:center;background:#0d6efd;color:#fff;padding:16px;border-radius:8px}
@@ -734,6 +748,20 @@ table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}.b
               <p style="font-style:italic;margin-top:8px">{ct.test.portrait}</p>
             </>
           )}
+          {eia && (
+            <>
+              <h2>Communication – entretien IA ({eia.score_global}/100)</h2>
+              <table>
+                {CRITERE_KEYS.map((k) => (
+                  <tr><td style="width:38%">{CRITERES[k].label}</td>
+                    <td style="padding:6px"><div class="bar"><div style={`width:${Number(eia[k])}%;background:${CRITERES[k].color}`}></div></div></td>
+                    <td style="width:50px;text-align:right">{eia[k]}/100</td></tr>
+                ))}
+              </table>
+              {eia.synthese && <p style="margin-top:8px">{eia.synthese}</p>}
+              <p class="muted" style="font-size:9.5px">Entretien passé le {dateFr(eia.termine_le)} · score indicatif fondé uniquement sur le contenu des réponses.</p>
+            </>
+          )}
           <div class="foot">CV généré par Medical Staff le {dateFr(today())} – document confidentiel</div>
         </div>
         <script>{raw("document.getElementById('print').addEventListener('click',function(){window.print()});")}</script>
@@ -756,6 +784,7 @@ r.get('/suggestions/:id{[0-9]+}', async (c) => {
   const cands = await candidatsFull(db, ids);
   const scored = cands.map((cd) => ({ cd, s: matchScore(offre, cd) })).sort((a, b) => b.s.total - a.s.total).slice(0, 5);
   const postules = new Set((await all<Row>(db, 'SELECT candidat_id FROM candidatures WHERE offre_id = ?', offre.id)).map((x) => x.candidat_id));
+  const comm = await scoresCommunication(db, scored.map((x) => x.cd.id));
   const crit: [keyof Omit<ReturnType<typeof matchScore>, 'total' | 'competences_matchees'>, string, number][] = [
     ['competences', 'Compétences', 45], ['diplome', 'Diplôme', 25], ['experience', 'Expérience', 20], ['personnalite', 'Personnalité', 10],
   ];
@@ -779,7 +808,7 @@ r.get('/suggestions/:id{[0-9]+}', async (c) => {
             <div class="col-md-4">
               <div class="d-flex align-items-center gap-2">
                 <img src={photoUrl(cd.photo)} class="avatar-sm" alt="" />
-                <div><strong>{cd.prenom} {cd.nom}</strong>{postules.has(cd.id) && <> <span class="badge bg-info">A postulé</span></>}<br />
+                <div><strong>{cd.prenom} {cd.nom}</strong>{postules.has(cd.id) && <> <span class="badge bg-info">A postulé</span></>} <BadgeCommunication score={comm.get(cd.id)} /><br />
                   <small class="text-muted">{cd.experience_annees} an(s) d'exp. · {cd.ville || '—'} · {money(cd.salaire_souhaite)}</small></div>
               </div>
               {s.competences_matchees.length > 0 && (

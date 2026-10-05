@@ -10,7 +10,7 @@ Cette version tourne **gratuitement sur Cloudflare** :
 | Base de données | Cloudflare D1 (SQLite), photos comprises | Gratuit jusqu'à 5 Go |
 | Fichiers statiques | Workers Static Assets (Bootstrap, Font Awesome, FullCalendar, Poppins servis localement) | Gratuit |
 | Emails | Journal consultable dans l'administration, ou envoi réel via Brevo / Resend | Gratuit (300 emails / jour avec Brevo) |
-| Chatbot | Moteur local, ou Workers AI (optionnel) | Gratuit |
+| Entretien IA et chatbot | Workers AI (transcription Whisper, évaluation Llama) | Gratuit dans le quota quotidien |
 
 > La version d'origine en **PHP / MySQL** est conservée dans le dossier [`php/`](php/README.md).
 
@@ -30,7 +30,7 @@ Comptez environ 15 minutes. Tout se fait depuis le navigateur.
 
 1. Allez sur <https://dash.cloudflare.com/profile/api-tokens> → **Create Token**.
 2. Choisissez le modèle **Edit Cloudflare Workers** → **Use template**.
-3. Dans **Permissions**, cliquez sur **+ Add more** et ajoutez : `Account` → `D1` → `Edit`.
+3. Dans **Permissions**, cliquez sur **+ Add more** et ajoutez : `Account` → `D1` → `Edit`, puis `Account` → `Workers AI` → `Read` (pour l'entretien IA et le chatbot).
 4. **Continue to summary** → **Create Token**, puis copiez le jeton (il ne sera plus affiché).
 
 ### 3. Ajouter les secrets dans GitHub
@@ -80,15 +80,21 @@ Pour de vrais envois, gratuitement avec **Brevo** (300 emails / jour) :
 
 Resend est aussi pris en charge (`MAIL_PROVIDER = "resend"` + secret `RESEND_API_KEY`), mais il exige un nom de domaine vérifié pour écrire à d'autres adresses que la vôtre.
 
+## 🎙️ Entretien IA (communication)
+
+Depuis son espace, le candidat passe un entretien de **5 questions orales** de mise en situation (3 générales, 2 propres à son métier). Il répond au micro (2 minutes maximum par question), ou par écrit s'il n'a pas de micro.
+
+- **Transcription** : Whisper (`@cf/openai/whisper-large-v3-turbo`). L'audio n'est jamais stocké, seul le texte est conservé.
+- **Évaluation** : Llama 3.3 70B (Llama 3.1 8B en secours) note 5 critères sur 100 (clarté, structure, empathie, vocabulaire professionnel, adaptation à l'interlocuteur), avec une synthèse, des points forts et des conseils.
+- **Garde-fous** : seul le contenu des réponses est évalué (ni voix, ni visage, ni émotions) ; les réponses vides ou recopiées sont pénalisées ; le score est indicatif et ne bloque jamais une candidature ; consentement demandé ; 2 entretiens maximum par 24 h ; seul le dernier résultat est montré.
+- **Côté établissement** : score et détail sur le CV, le PDF, la CVthèque, les candidatures et les suggestions IA (sans modifier le score de matching).
+- **Sans Workers AI** (jeton sans la permission, quota épuisé, ou développement local) : transcription par la reconnaissance vocale du navigateur (Chrome / Edge) et **évaluation simplifiée** plafonnée à 80, signalée comme telle.
+
+Le workflow de déploiement active Workers AI automatiquement. Si le jeton n'a pas la permission `Workers AI → Read`, il redéploie sans IA et affiche un avertissement. Coût indicatif : environ 300 à 500 « neurones » par entretien, soit une vingtaine d'entretiens par jour dans le quota gratuit (10 000 neurones par jour).
+
 ## 🤖 Chatbot Dr. Jobs
 
-Le moteur local répond instantanément aux questions courantes (CV, salaires, diplômes, entretiens, abonnement…). Pour les questions complexes, vous pouvez activer **Workers AI** (gratuit dans la limite d'un quota quotidien) :
-
-1. dans `wrangler.jsonc`, décommentez la ligne `"ai": { "binding": "AI" }` ;
-2. passez `CHATBOT_ENGINE` à `"workers-ai"` ;
-3. ajoutez au jeton d'API la permission `Account` → `Workers AI` → `Read`.
-
-L'historique de conversation est limité aux 10 derniers messages.
+Le moteur local répond instantanément aux questions courantes (CV, salaires, diplômes, entretiens, abonnement…). Une fois Workers AI activé, les questions complexes sont transmises à un modèle Llama. L'historique de conversation est limité aux 10 derniers messages.
 
 ---
 
@@ -128,6 +134,7 @@ src/
     public.tsx           Accueil, mission, offres, demandes anonymisées, photos
     auth.tsx             Déconnexion, mot de passe oublié, réinitialisation
     candidat.tsx         Inscription, tableau de bord, CV + photo, test, offres, entretiens
+    entretien-ia.tsx     Entretien IA : questions orales, transcription, évaluation
     recruteur.tsx        Inscription, abonnement, offres, CVthèque, candidatures, CV + PDF,
                          suggestions IA, calendrier d'entretiens
     admin.tsx            Statistiques, utilisateurs, offres, abonnements, emails, journal
@@ -145,6 +152,7 @@ php/                     Version d'origine PHP / MySQL
 ## Fonctionnalités
 
 - **Visiteur** : accueil, mission, offres filtrables (poste, gouvernorat, contrat), demandes d'emploi anonymisées.
+- **Entretien IA** : voir plus haut.
 - **Candidat** : CV structuré (photo redimensionnée dans le navigateur, 24 gouvernorats, diplômes, expériences, compétences avec autocomplétion, langues, prétentions, confidentialité des coordonnées) ; test de personnalité de 30 questions (Big Five + adaptation au milieu médical, jauges, portrait) ; bouton « Postuler » verrouillé tant que le CV et le test ne sont pas complétés ; emails de confirmation ; validation ou refus des entretiens.
 - **Établissement** : abonnement annuel de 1 000 TND (paiement simulé) ; gestion des offres ; CVthèque multicritères ; candidatures ; CV détaillé (consultations enregistrées) ; **CV en PDF** (page imprimable avec photo → « Enregistrer en PDF » du navigateur) ; **suggestions IA 🧠** (compétences 45 %, diplôme 25 %, expérience 20 %, bonus personnalité 10 %) ; calendrier d'entretiens FullCalendar (créneaux de 30 min, 8h–18h, chevauchements refusés).
 - **Administrateur** : statistiques, gestion des utilisateurs (suspension avec déconnexion immédiate, réactivation, suppression), modération des offres, activation manuelle et annulation d'abonnements, journal des emails et des actions.

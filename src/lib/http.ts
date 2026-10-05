@@ -169,7 +169,7 @@ export function requireRole(type: User['type']): MiddlewareHandler<AppEnv> {
       flash(c, 'warning', 'Veuillez vous connecter pour accéder à cet espace.');
       if (c.req.method === 'GET') {
         const url = new URL(c.req.url);
-        setCookie(c, NEXT_COOKIE, url.pathname + url.search, cookieOpts(c, 600));
+        setCookie(c, NEXT_COOKIE, `${type}|${url.pathname}${url.search}`, cookieOpts(c, 600));
       }
       return redirect(c, loginPath(type));
     }
@@ -177,15 +177,17 @@ export function requireRole(type: User['type']): MiddlewareHandler<AppEnv> {
   };
 }
 
-export function redirectAfterLogin(c: Ctx, fallback: string) {
-  const next = getCookie(c, NEXT_COOKIE);
+/** Redirige vers la page demandée avant la connexion, si elle concerne le même rôle */
+export function redirectAfterLogin(c: Ctx, fallback: string, role: string) {
+  const raw = getCookie(c, NEXT_COOKIE) ?? '';
   deleteCookie(c, NEXT_COOKIE, { path: '/' });
-  if (next && next.startsWith('/') && !next.startsWith('//')) return c.redirect(next, 302);
+  const [type, next] = raw.split('|', 2);
+  if (next && type === role && next.startsWith('/') && !next.startsWith('//')) return c.redirect(next, 302);
   return redirect(c, fallback);
 }
 
-export function setNext(c: Ctx, path: string) {
-  setCookie(c, NEXT_COOKIE, path, cookieOpts(c, 600));
+export function setNext(c: Ctx, type: string, path: string) {
+  setCookie(c, NEXT_COOKIE, `${type}|${path}`, cookieOpts(c, 600));
 }
 
 /** Limitation : 5 échecs par compte ou 30 échecs par adresse IP sur 15 minutes */

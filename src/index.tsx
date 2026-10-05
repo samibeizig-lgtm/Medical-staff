@@ -6,6 +6,7 @@ import { Empty } from './views/ui';
 import publicRoutes from './routes/public';
 import authRoutes from './routes/auth';
 import candidatRoutes from './routes/candidat';
+import entretienIaRoutes from './routes/entretien-ia';
 import recruteurRoutes from './routes/recruteur';
 import adminRoutes from './routes/admin';
 import apiRoutes from './routes/api';
@@ -16,6 +17,7 @@ app.use('*', appMiddleware);
 
 app.route('/', publicRoutes);
 app.route('/', authRoutes);
+app.route('/candidat/entretien-ia', entretienIaRoutes);
 app.route('/candidat', candidatRoutes);
 app.route('/recruteur', recruteurRoutes);
 app.route('/admin', adminRoutes);

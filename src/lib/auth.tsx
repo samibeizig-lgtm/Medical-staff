@@ -41,11 +41,11 @@ export async function loginPage(c: Ctx, o: LoginOpts) {
     const res = await attemptLogin(c, email, await field(c, 'password', 200), o.type);
     if (typeof res !== 'string') {
       await loginUser(c, res.id);
-      return redirectAfterLogin(c, o.dashboard);
+      return redirectAfterLogin(c, o.dashboard, o.type);
     }
     error = res;
   } else if (c.get('user')?.type === o.type) {
-    return redirectAfterLogin(c, o.dashboard);
+    return redirectAfterLogin(c, o.dashboard, o.type);
   }
   return page(c, { title: o.title }, (
     <AuthCard icon={o.icon} iconClass={o.iconClass} title={o.title} subtitle={o.subtitle}>

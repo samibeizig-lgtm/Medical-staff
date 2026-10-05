@@ -107,6 +107,32 @@ while (next.getUTCDay() !== 1) next.setUTCDate(next.getUTCDate() + 1); // lundi 
 const day = next.toISOString().slice(0, 10);
 out.push(`INSERT INTO entretiens (recruteur_id, candidat_id, offre_id, date_debut, date_fin, lieu, contact) VALUES (${recIds[0]}, ${candIds[1]}, 1002, '${day} 10:00:00', '${day} 10:30:00', 'Clinique Les Oliviers, Avenue Taïeb Mhiri, Sousse', 'Karim Mansour – +216 73 000 000');`);
 
+
+// Entretiens IA d'exemple (données de démonstration, non issues d'une vraie évaluation)
+const eiaDemo = [
+  { cid: candIds[0], poste: 'Sage-femme', scores: [82, 76, 91, 85, 80], synthese: "Réponses claires et chaleureuses, avec une vraie attention portée aux patientes et à leur entourage. Le vocabulaire obstétrical est maîtrisé ; certaines réponses gagneraient à être plus structurées.", forts: ["Empathie et capacité à rassurer", "Vocabulaire professionnel précis"], conseils: ["Structurez vos réponses : situation, action, résultat.", "Concluez chaque réponse par une phrase de synthèse."],
+    qr: [
+      ["Présentez-vous en quelques phrases et expliquez pourquoi vous avez choisi ce métier.", "Je suis sage-femme depuis huit ans à Sfax. J'ai choisi ce métier pour accompagner les femmes à un moment unique de leur vie, avec bienveillance et rigueur."],
+      ["Une future maman très inquiète vous demande si son accouchement va bien se passer. Que lui dites-vous ?", "Je commence par l'écouter et reconnaître son inquiétude, c'est normal. Je lui explique comment se déroule le suivi, que nous surveillons le cœur du bébé en continu et que l'équipe est présente à chaque étape. Je l'invite à poser toutes ses questions."],
+      ["Comment expliqueriez-vous les premiers gestes de l'allaitement à une jeune mère fatiguée ?", "Je m'assieds à côté d'elle, je lui montre une position confortable et je la laisse essayer à son rythme, sans pression. Je la rassure en lui disant que la fatigue est normale et que nous allons y aller progressivement."],
+      ["Comment transmettez-vous les informations importantes à l'équipe lors d'un changement de garde ?", "Je fais une transmission ciblée : l'état de chaque patiente, les constantes, les traitements en cours et les points de vigilance. Je note tout dans le dossier pour assurer la traçabilité."],
+      ["Un patient anxieux refuse un soin. Que lui dites-vous pour le rassurer ?", "Je respecte son refus, je lui demande ce qui l'inquiète et je lui explique simplement le soin et son intérêt. S'il refuse toujours, j'informe le médecin et je le note dans le dossier."],
+    ] },
+  { cid: candIds[1], poste: 'Technicien(ne) supérieur(e) en anesthésie-réanimation', scores: [70, 74, 58, 88, 66], synthese: "Communication précise et technique, très à l'aise avec l'équipe médicale. L'écoute du patient et la reformulation pourraient être davantage mises en avant.", forts: ["Vocabulaire technique maîtrisé", "Transmissions structurées avec l'équipe"], conseils: ["Prenez le temps de reformuler l'inquiétude du patient avant d'expliquer.", "Utilisez des mots simples face aux patients."],
+    qr: [
+      ["Présentez-vous en quelques phrases et expliquez pourquoi vous avez choisi ce métier.", "Technicien anesthésiste depuis 2016, j'ai travaillé à Sahloul puis en clinique. J'aime la précision du bloc et le travail d'équipe."],
+      ["Un patient a peur de l'anesthésie générale. Comment le rassurez-vous avant l'intervention ?", "Je lui explique le monitorage, que nous surveillons ses constantes en permanence et que l'anesthésiste reste avec lui pendant toute l'intervention."],
+      ["Comment communiquez-vous avec le médecin anesthésiste lors d'une complication au bloc ?", "J'annonce clairement les paramètres : saturation, tension, fréquence cardiaque, puis j'applique le protocole et je confirme chaque consigne à voix haute."],
+      ["Comment transmettez-vous les informations importantes à l'équipe lors d'un changement de garde ?", "Transmission ciblée en salle de réveil : produits administrés, incidents, score de réveil et consignes de surveillance."],
+      ["Un médecin vous donne une consigne qui vous semble incorrecte. Comment réagissez-vous ?", "Je lui fais part de mon doute avec respect et je vérifie la prescription avant d'agir, pour la sécurité du patient."],
+    ] },
+];
+for (const e of eiaDemo) {
+  const [cl, st, em, vo, ad] = e.scores;
+  const g = Math.round((cl + st + em + vo + ad) / 5);
+  out.push(`INSERT INTO entretiens_ia (candidat_id, statut, poste, questions, reponses, clarte, structure, empathie, vocabulaire, adaptation, score_global, synthese, points_forts, conseils, moteur, created_at, termine_le) VALUES (${e.cid}, 'termine', ${s(e.poste)}, ${s(JSON.stringify(e.qr.map((x) => x[0])))}, ${s(JSON.stringify(e.qr.map((x) => ({ texte: x[1], mode: 'oral', duree: 60, source: 'demo' }))))}, ${cl}, ${st}, ${em}, ${vo}, ${ad}, ${g}, ${s(e.synthese)}, ${s(JSON.stringify(e.forts))}, ${s(JSON.stringify(e.conseils))}, 'demo', ${s(dt(-4))}, ${s(dt(-4))});`);
+}
+
 const sql = out.join('\n') + '\n';
 const args = process.argv.slice(2);
 if (args.includes('--print')) {

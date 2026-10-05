@@ -20,9 +20,10 @@
     }
   ],
 
-  // Chatbot avec Workers AI (gratuit dans la limite du quota quotidien) : décommenter la ligne
-  // ci-dessous et passer CHATBOT_ENGINE à "workers-ai". Non actif par défaut, car « wrangler dev »
-  // exige alors une connexion au compte Cloudflare.
+  // Workers AI (gratuit dans la limite du quota quotidien) : transcription et évaluation de
+  // l'entretien IA, chatbot. Le workflow GitHub active automatiquement cette ligne au déploiement.
+  // Elle reste commentée ici car « wrangler dev » exigerait sinon une connexion au compte Cloudflare
+  // (sans IA, l'entretien utilise la reconnaissance vocale du navigateur et l'évaluation simplifiée).
   // "ai": { "binding": "AI" },
 
   "vars": {

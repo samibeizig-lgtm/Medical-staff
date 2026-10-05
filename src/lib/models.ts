@@ -115,3 +115,20 @@ export const SQL_EXP_MOIS = `(SELECT COALESCE(SUM(MAX(0,
   )), 0) FROM experiences x WHERE x.candidat_id = c.id AND x.date_debut IS NOT NULL)`;
 
 export { all };
+
+/** Dernier entretien IA terminé d'un candidat (ou null) */
+export async function dernierEntretienIa(db: D1Database, candidatId: number): Promise<Row | null> {
+  return one(db, "SELECT * FROM entretiens_ia WHERE candidat_id = ? AND statut = 'termine' ORDER BY termine_le DESC, id DESC LIMIT 1", candidatId);
+}
+
+/** Derniers scores de communication de plusieurs candidats : Map candidat_id → score */
+export async function scoresCommunication(db: D1Database, ids: number[]): Promise<Map<number, number>> {
+  const m = new Map<number, number>();
+  if (!ids.length) return m;
+  const rows = await all<Row>(db,
+    `SELECT e.candidat_id, e.score_global FROM entretiens_ia e
+     WHERE e.statut = 'termine' AND e.candidat_id IN (${ids.map(() => '?').join(',')})
+       AND e.id = (SELECT MAX(x.id) FROM entretiens_ia x WHERE x.candidat_id = e.candidat_id AND x.statut = 'termine')`, ...ids);
+  for (const r of rows) m.set(r.candidat_id, r.score_global);
+  return m;
+}

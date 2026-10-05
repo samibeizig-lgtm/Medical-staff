@@ -170,3 +170,12 @@ body { font-family: 'Poppins', system-ui, -apple-system, sans-serif; background:
 .bar-tip { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; font-size: .75rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .1s; z-index: 3; }
 .bar-col:hover .bar-tip, .bar-col:focus .bar-tip { opacity: 1; }
 .bar-chart + details { margin-top: 32px !important; }
+
+/* Entretien IA */
+.ia-question { line-height: 1.5; }
+.ia-timer { font-variant-numeric: tabular-nums; font-weight: 600; color: #dc3545; display: inline-flex; align-items: center; gap: 8px; }
+.ia-dot { width: 10px; height: 10px; border-radius: 50%; background: #dc3545; animation: ia-pulse 1s infinite; }
+@keyframes ia-pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .ia-dot { animation: none; } }
+.transcript { background: #f8fafc; border-left: 3px solid #cfe2ff; padding: 8px 12px; border-radius: 4px; white-space: pre-line; }
+.ia-result .score-ring span { font-size: 1.1rem; }

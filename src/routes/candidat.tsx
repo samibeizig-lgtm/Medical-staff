@@ -5,7 +5,8 @@ import { all, NOW, one, run, stmt, TODAY, val } from '../lib/db';
 import { field, flash, indexed, q, readForm, redirect, requireRole, setNext, origin, type Ctx } from '../lib/http';
 import { createUser, loginPage, validatePassword } from '../lib/auth';
 import { loginUser } from '../lib/http';
-import { candidatFull, currentCandidat, cvComplet, testPasse } from '../lib/models';
+import { candidatFull, currentCandidat, cvComplet, dernierEntretienIa, testPasse } from '../lib/models';
+import { BadgeCommunication } from '../views/entretien-ia';
 import { DIPLOMES, DISPONIBILITES, GOUVERNORATS, LANGUES, MENTIONS, NIVEAUX_LANGUE, POSTES, TYPES_CONTRAT, inList } from '../lib/data';
 import { esc, intOrNull, isEmail, money, refCandidat } from '../lib/format';
 import { dateFr, isValidDate, plageHoraire, parseLocal, tunis } from '../lib/dates';
@@ -21,7 +22,7 @@ const r = new Hono<AppEnv>();
 /* ---------- Connexion / inscription ---------- */
 r.on(['GET', 'POST'], '/login', (c) => {
   const offre = q(c, 'offre');
-  if (/^\d+$/.test(offre)) setNext(c, `/candidat/offres?poste=#offre-${offre}`);
+  if (/^\d+$/.test(offre)) setNext(c, 'candidat', `/candidat/offres?poste=#offre-${offre}`);
   return loginPage(c, {
     type: 'candidat', title: 'Espace candidat', icon: 'fa-user-nurse', btnClass: 'btn-primary', dashboard: '/candidat/dashboard',
     subtitle: offre ? 'Connectez-vous pour postuler à cette offre.' : undefined,
@@ -94,7 +95,7 @@ r.get('/', (c) => redirect(c, '/candidat/dashboard'));
 r.get('/dashboard', async (c) => {
   const db = c.env.DB;
   const m = await me(c);
-  const [cand, cvOk, stats, candidatures] = await Promise.all([
+  const [cand, cvOk, stats, candidatures, eia] = await Promise.all([
     candidatFull(db, m.id),
     cvComplet(db, m.id),
     one<Row>(db, `SELECT (SELECT COUNT(*) FROM candidatures WHERE candidat_id = ?1) AS nb_cand,
@@ -102,6 +103,7 @@ r.get('/dashboard', async (c) => {
                           (SELECT COUNT(*) FROM cv_consultations WHERE candidat_id = ?1) AS nb_vues`, m.id),
     all<Row>(db, `SELECT ca.*, o.titre, o.ville, r.nom_etablissement FROM candidatures ca JOIN offres o ON o.id = ca.offre_id
                   JOIN recruteurs r ON r.id = o.recruteur_id WHERE ca.candidat_id = ? ORDER BY ca.created_at DESC LIMIT 5`, m.id),
+    dernierEntretienIa(db, m.id),
   ]);
   const ct = cand!;
   const testOk = !!ct.test;
@@ -114,6 +116,7 @@ r.get('/dashboard', async (c) => {
         <div class="d-flex flex-wrap gap-2">
           <a href="/candidat/cv" class="btn btn-primary"><i class="fa-solid fa-file-pen me-1"></i>Modifier mon CV</a>
           <a href="/candidat/test" class="btn btn-outline-primary"><i class="fa-solid fa-brain me-1"></i>Test de personnalité</a>
+          <a href="/candidat/entretien-ia" class="btn btn-outline-primary"><i class="fa-solid fa-microphone-lines me-1"></i>Entretien IA</a>
           <a href="/candidat/offres" class="btn btn-outline-primary"><i class="fa-solid fa-magnifying-glass me-1"></i>Voir les offres</a>
           <a href="/candidat/entretiens" class="btn btn-outline-primary position-relative"><i class="fa-solid fa-calendar-check me-1"></i>Mes entretiens
             {stats!.nb_ent > 0 && <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{stats!.nb_ent}</span>}</a>
@@ -156,6 +159,20 @@ r.get('/dashboard', async (c) => {
               <Jauges test={ct.test} compact />
             </div></div>
           )}
+          <div class="card border-0 shadow-sm mt-4"><div class="card-body">
+            <h3 class="h6"><i class="fa-solid fa-microphone-lines text-primary me-1"></i>Entretien IA – communication</h3>
+            {eia ? (
+              <>
+                <p class="mb-2">Score : <BadgeCommunication score={eia.score_global} /> <span class="small text-muted">· {dateFr(eia.termine_le)}</span></p>
+                <a href="/candidat/entretien-ia" class="btn btn-sm btn-outline-primary">Voir le détail et les conseils</a>
+              </>
+            ) : (
+              <>
+                <p class="small text-muted mb-2">Entraînez-vous et démarquez-vous : 5 questions orales, évaluées par l'IA. Le score est visible par les recruteurs.</p>
+                <a href="/candidat/entretien-ia" class="btn btn-sm btn-primary"><i class="fa-solid fa-play me-1"></i>Passer l'entretien IA</a>
+              </>
+            )}
+          </div></div>
         </div>
         <div class="col-lg-8">
           <CvSections c={ct} />

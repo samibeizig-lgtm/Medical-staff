@@ -98,11 +98,22 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
         run: |
+          ARGS=()
           if [ -n "$BREVO_API_KEY" ] && [ -n "$MAIL_FROM" ]; then
-            npx wrangler deploy --var MAIL_PROVIDER:brevo --var "MAIL_FROM:$MAIL_FROM"
-            echo "$BREVO_API_KEY" | npx wrangler secret put BREVO_API_KEY
+            ARGS+=(--var MAIL_PROVIDER:brevo --var "MAIL_FROM:$MAIL_FROM")
+          fi
+          # Workers AI (entretien IA + chatbot) : activé si le jeton le permet, sinon repli sans IA
+          cp wrangler.jsonc /tmp/wrangler.sans-ia.jsonc
+          sed -i 's#^  // "ai": { "binding": "AI" },#  "ai": { "binding": "AI" },#' wrangler.jsonc
+          if npx wrangler deploy "${ARGS[@]}" --var CHATBOT_ENGINE:workers-ai; then
+            echo "Workers AI activé."
           else
-            npx wrangler deploy
+            echo "::warning::Déploiement avec Workers AI impossible (ajoutez la permission « Workers AI : Lecture » au jeton Cloudflare). Déploiement sans IA : l'entretien IA utilisera l'évaluation simplifiée."
+            cp /tmp/wrangler.sans-ia.jsonc wrangler.jsonc
+            npx wrangler deploy "${ARGS[@]}"
+          fi
+          if [ -n "$BREVO_API_KEY" ] && [ -n "$MAIL_FROM" ]; then
+            echo "$BREVO_API_KEY" | npx wrangler secret put BREVO_API_KEY
           fi
 
       - name: Adresse du site
