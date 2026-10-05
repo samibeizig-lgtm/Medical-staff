@@ -1,4 +1,4 @@
-# Medical Staff
+# medicalstaff.tn
 
 Plateforme tunisienne de recrutement **médical et paramédical** : elle met en relation les professionnels de santé (candidats) et les établissements de santé (cliniques, hôpitaux, cabinets, laboratoires…).
 
@@ -13,6 +13,25 @@ Cette version tourne **gratuitement sur Cloudflare** :
 | Entretien IA et chatbot | Workers AI (transcription Whisper, évaluation Llama) | Gratuit dans le quota quotidien |
 
 > La version d'origine en **PHP / MySQL** est conservée dans le dossier [`php/`](php/README.md).
+
+## 🎨 Charte graphique
+
+Le site applique la [charte du logo](docs/charte-logo-medicalstaff.pdf) (octobre 2026) :
+
+| Rôle | Couleur |
+|---|---|
+| Bleu – couleur principale (titres, boutons, liens) | `#1F5FAD` |
+| Vert – accent graphique | `#2BA84A` (texte en grande taille : `#23913F`) |
+| Turquoise – accent graphique, pas de texte courant | `#14B8B0` (texte en grande taille : `#0E9F9A`) |
+| Encre – texte | `#14212B` |
+| Gris – texte secondaire | `#5B6770` |
+| Bleu nuit – fonds sombres | `#0E2236` |
+
+- **Logos** (`public/assets/img/`) : `logo-medicalstaff.svg` (principal, avec slogan), `logo-entete.svg` (barre de navigation), `logo-fond-sombre.svg` (pied de page), `symbole.svg`, `favicon.svg` et `logo-email.png` (emails, car les messageries bloquent le SVG). Tous sont extraits des tracés vectoriels de la charte.
+- **Typographie** : Poppins, en Bold pour les titres, Medium pour les sous-titres et Regular pour le texte.
+- **Nom** : toujours en minuscules, « medicalstaff.tn ».
+- **Bandeau tricolore** vert, bleu, turquoise, dans cet ordre, en haut des pages, des emails et des CV.
+- **Accessibilité** : le turquoise n'offre pas assez de contraste sous un texte blanc ; les boutons « établissement » sont donc en bleu nuit.
 
 ---
 

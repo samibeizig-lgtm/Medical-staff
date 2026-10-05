@@ -2,13 +2,15 @@ import type { Ctx } from './http';
 import { esc } from './format';
 import { run } from './db';
 
-function layout(body: string): string {
+function layout(body: string, baseUrl: string): string {
   return (
-    '<!doctype html><html><body style="margin:0;padding:24px;background:#f3f6fb;font-family:Arial,sans-serif;color:#1f2937;">' +
-    '<div style="max-width:600px;margin:auto;background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">' +
-    '<div style="background:#0d6efd;color:#fff;padding:16px 20px;font-size:20px;font-weight:bold">Medical Staff</div>' +
-    `<div style="padding:20px;line-height:1.5">${body}</div>` +
-    '<div style="background:#f3f4f6;padding:12px 20px;font-size:12px;color:#6b7280">Plateforme de recrutement médical et paramédical en Tunisie.</div>' +
+    '<!doctype html><html><body style="margin:0;padding:24px;background:#F3F6FA;font-family:Poppins,Arial,sans-serif;color:#14212B;">' +
+    '<div style="max-width:600px;margin:auto;background:#fff;border:1px solid #E1E7EE;border-radius:10px;overflow:hidden">' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr>' +
+    '<td style="height:5px;width:28%;background:#2BA84A"></td><td style="height:5px;width:44%;background:#1F5FAD"></td><td style="height:5px;width:28%;background:#14B8B0"></td></tr></table>' +
+    `<div style="padding:18px 20px 8px"><img src="${baseUrl}/assets/img/logo-email.png" width="280" height="62" alt="medicalstaff.tn – Recrutement paramédical · Tunisie" style="display:block;border:0;width:280px;height:auto"></div>` +
+    `<div style="padding:10px 20px 20px;line-height:1.55">${body}</div>` +
+    '<div style="background:#0E2236;padding:12px 20px;font-size:12px;color:#C9D3DC">medicalstaff.tn · Plateforme de recrutement médical et paramédical en Tunisie.</div>' +
     '</div></body></html>'
   );
 }
@@ -44,7 +46,7 @@ async function deliver(c: Ctx, to: string, subject: string, html: string): Promi
  * Chaque email est enregistré dans la table `emails`, consultable dans l'administration.
  */
 export function sendMail(c: Ctx, to: string, subject: string, body: string): void {
-  const html = layout(body);
+  const html = layout(body, new URL(c.req.url).origin);
   c.executionCtx.waitUntil(
     (async () => {
       const statut = await deliver(c, to, subject, html);

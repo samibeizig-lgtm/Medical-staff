@@ -52,7 +52,7 @@ r.on(['GET', 'POST'], '/register', async (c) => {
       const uid = await createUser(c, v.email, p, 'candidat');
       await run(c.env.DB, `INSERT INTO candidats (utilisateur_id, nom, prenom, updated_at) VALUES (?, ?, ?, ${NOW})`, uid, v.nom, v.prenom);
       await loginUser(c, uid);
-      sendMail(c, v.email, 'Bienvenue sur Medical Staff', `<p>Bonjour ${esc(v.prenom)},</p><p>Votre compte candidat a bien été créé. Complétez votre CV et passez le test de personnalité pour postuler aux offres.</p>`);
+      sendMail(c, v.email, 'Bienvenue sur medicalstaff.tn', `<p>Bonjour ${esc(v.prenom)},</p><p>Votre compte candidat a bien été créé. Complétez votre CV et passez le test de personnalité pour postuler aux offres.</p>`);
       flash(c, 'success', `Bienvenue ${v.prenom} ! Complétez maintenant votre CV.`);
       return redirect(c, '/candidat/cv');
     }

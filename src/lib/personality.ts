@@ -4,7 +4,7 @@
  */
 export const DIMENSIONS = {
   ouverture: { label: 'Ouverture', color: '#6f42c1', icon: 'fa-lightbulb' },
-  conscience: { label: 'Conscience', color: '#0d6efd', icon: 'fa-list-check' },
+  conscience: { label: 'Conscience', color: '#1F5FAD', icon: 'fa-list-check' },
   extraversion: { label: 'Extraversion', color: '#fd7e14', icon: 'fa-comments' },
   agreabilite: { label: 'Agréabilité', color: '#20c997', icon: 'fa-hand-holding-heart' },
   stabilite: { label: 'Stabilité émotionnelle', color: '#0dcaf0', icon: 'fa-scale-balanced' },

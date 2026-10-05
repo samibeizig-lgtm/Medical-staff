@@ -342,7 +342,7 @@ r.on(['GET', 'POST'], '/abonnements', async (c) => {
         const debut = current ? addDays(current.date_fin, 1) : today();
         const fin = addDays(addYears(debut, 1), -1);
         await run(db, 'INSERT INTO abonnements (recruteur_id, montant, date_debut, date_fin, statut, reference_paiement) VALUES (?,?,?,?,?,?)', rid, montant, debut, fin, 'actif', ref);
-        sendMail(c, rec.email, 'Votre abonnement Medical Staff est actif',
+        sendMail(c, rec.email, 'Votre abonnement medicalstaff.tn est actif',
           `<p>Bonjour,</p><p>L'abonnement annuel de <strong>${esc(rec.nom_etablissement)}</strong> est actif du ${dateFr(debut)} au ${dateFr(fin)}.</p><p>Référence : ${esc(ref)}</p>`);
         await journal(c, `Activation manuelle d'abonnement pour ${rec.nom_etablissement} (${ref}, ${montant} TND)`);
         flash(c, 'success', `Abonnement activé pour ${rec.nom_etablissement} jusqu'au ${dateFr(fin)}.`);

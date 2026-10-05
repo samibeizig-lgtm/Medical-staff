@@ -31,7 +31,7 @@
     // "brevo" ou "resend" : envoi réel (clé API à définir en secret : BREVO_API_KEY ou RESEND_API_KEY)
     "MAIL_PROVIDER": "log",
     "MAIL_FROM": "no-reply@medicalstaff.tn",
-    "MAIL_FROM_NAME": "Medical Staff",
+    "MAIL_FROM_NAME": "medicalstaff.tn",
     // "local" (réponses instantanées) ou "workers-ai" (questions complexes envoyées à un modèle Llama, voir "ai" ci-dessus)
     "CHATBOT_ENGINE": "local",
     "ABONNEMENT_PRIX": "1000",

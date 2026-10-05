@@ -13,7 +13,7 @@ export const DUREE_MAX_SECONDES = 120;
 export const AUDIO_MAX_OCTETS = 3_000_000;
 
 export const CRITERES = {
-  clarte: { label: 'Clarté', icon: 'fa-bullhorn', color: '#0d6efd', aide: 'Phrases compréhensibles, idées exprimées simplement' },
+  clarte: { label: 'Clarté', icon: 'fa-bullhorn', color: '#1F5FAD', aide: 'Phrases compréhensibles, idées exprimées simplement' },
   structure: { label: 'Structure', icon: 'fa-list-ol', color: '#6f42c1', aide: 'Réponse organisée : contexte, actions, conclusion' },
   empathie: { label: 'Empathie', icon: 'fa-hand-holding-heart', color: '#20c997', aide: "Écoute, bienveillance, prise en compte de l'autre" },
   vocabulaire: { label: 'Vocabulaire professionnel', icon: 'fa-book-medical', color: '#fd7e14', aide: 'Termes justes du milieu de soins' },

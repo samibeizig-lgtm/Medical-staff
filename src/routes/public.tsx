@@ -64,7 +64,7 @@ r.get('/', async (c) => {
         <div class="row align-items-center g-4 g-lg-5">
           <div class="col-lg-6">
             <h2 class="section-title">Une plateforme pensée pour la santé</h2>
-            <p class="text-muted">Medical Staff met en relation les professionnels de santé avec les cliniques, hôpitaux, cabinets, laboratoires et centres spécialisés partout en Tunisie. Notre plateforme combine CV structuré, test de personnalité, matching intelligent et planification d'entretiens pour accélérer chaque recrutement.</p>
+            <p class="text-muted">medicalstaff.tn met en relation les professionnels de santé avec les cliniques, hôpitaux, cabinets, laboratoires et centres spécialisés partout en Tunisie. Notre plateforme combine CV structuré, test de personnalité, matching intelligent et planification d'entretiens pour accélérer chaque recrutement.</p>
             <ul class="list-unstyled check-list">
               <li><i class="fa-solid fa-circle-check"></i>CV structuré adapté aux métiers paramédicaux</li>
               <li><i class="fa-solid fa-circle-check"></i>Test de personnalité Big Five adapté au milieu médical</li>
@@ -181,7 +181,7 @@ r.get('/mission', (c) => {
       </div></section>
       <section class="container py-5">
         <div class="row justify-content-center"><div class="col-lg-9 text-center">
-          <p class="fs-5 text-muted">Le système de santé tunisien repose sur des milliers de professionnels paramédicaux engagés. Pourtant, trouver le bon poste ou le bon profil reste souvent long et opaque. Medical Staff est né pour changer cela : une plateforme spécialisée, moderne et équitable, au service des soignants comme des établissements.</p>
+          <p class="fs-5 text-muted">Le système de santé tunisien repose sur des milliers de professionnels paramédicaux engagés. Pourtant, trouver le bon poste ou le bon profil reste souvent long et opaque. medicalstaff.tn est né pour changer cela : une plateforme spécialisée, moderne et équitable, au service des soignants comme des établissements.</p>
         </div></div>
         <div class="row g-4 mt-3">
           {piliers.map((p) => (

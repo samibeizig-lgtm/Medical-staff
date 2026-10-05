@@ -8,10 +8,11 @@ function Nav({ c, active }: { c: Ctx; active?: string }) {
   const u = c.get('user');
   const cls = (k: string) => 'nav-link' + (k === active ? ' active' : '');
   return (
-    <nav class="navbar navbar-expand-xl navbar-light bg-white shadow-sm sticky-top">
-      <div class="container">
-        <a class="navbar-brand fw-bold text-primary" href="/">
-          <img src="/assets/img/logo.svg" alt="" width="34" height="34" class="me-1" /> Medical <span class="text-teal">Staff</span>
+    <nav class="navbar navbar-expand-xl navbar-light bg-white shadow-sm sticky-top flex-column p-0">
+      <div class="brand-band w-100" aria-hidden="true"></div>
+      <div class="container py-2">
+        <a class="navbar-brand py-0" href="/" aria-label="medicalstaff.tn – accueil">
+          <img src="/assets/img/logo-entete.svg" alt="medicalstaff.tn" width="190" height="42" />
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Menu">
           <span class="navbar-toggler-icon"></span>
@@ -108,9 +109,10 @@ export function Layout({ c, title, active, head, scripts, children }: PageOpts &
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="csrf-token" content={c.get('csrf')} />
-          <meta name="description" content="Medical Staff : la plateforme tunisienne de recrutement médical et paramédical." />
-          <title>{`${title} | Medical Staff`}</title>
-          <link rel="icon" href="/assets/img/logo.svg" type="image/svg+xml" />
+          <meta name="description" content="medicalstaff.tn : la plateforme tunisienne de recrutement médical et paramédical." />
+          <title>{`${title} | medicalstaff.tn`}</title>
+          <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml" />
+          <meta name="theme-color" content="#1F5FAD" />
           <link href="/assets/vendor/bootstrap/bootstrap.min.css" rel="stylesheet" />
           <link href="/assets/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
           <link href="/assets/vendor/poppins/poppins.css" rel="stylesheet" />
@@ -150,7 +152,7 @@ function Footer() {
         <div class="container py-5">
           <div class="row g-4">
             <div class="col-md-4">
-              <h5 class="text-white fw-bold"><img src="/assets/img/logo.svg" alt="" width="28" class="me-1" /> Medical Staff</h5>
+              <img src="/assets/img/logo-fond-sombre.svg" alt="medicalstaff.tn – Recrutement paramédical · Tunisie" class="footer-logo mb-3" width="200" height="44" />
               <p class="small">La plateforme tunisienne de recrutement dédiée aux professionnels de santé médicaux et paramédicaux.</p>
             </div>
             <div class="col-6 col-md-2">
@@ -175,7 +177,7 @@ function Footer() {
             </div>
           </div>
           <hr class="border-secondary" />
-          <p class="small text-center mb-0">© {new Date().getFullYear()} Medical Staff – Tous droits réservés · <a href="/admin/login">Administration</a></p>
+          <p class="small text-center mb-0">© {new Date().getFullYear()} medicalstaff.tn – Tous droits réservés · <a href="/admin/login">Administration</a></p>
         </div>
       </footer>
       <div id="chatbot" class="chatbot">

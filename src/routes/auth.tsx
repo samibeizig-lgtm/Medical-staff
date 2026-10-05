@@ -41,8 +41,8 @@ r.on(['GET', 'POST'], '/mot-de-passe-oublie', async (c) => {
         await run(c.env.DB, `INSERT INTO password_resets (utilisateur_id, token_hash, expire_le) VALUES (?, ?, datetime('now', '+1 hour', '+${RESET_TTL_MIN} minutes'))`, u.id, await sha256(token));
         const link = `${origin(c)}/reinitialiser-mot-de-passe?token=${token}`;
         sendMail(c, u.email, 'Réinitialisation de votre mot de passe',
-          '<p>Bonjour,</p><p>Vous avez demandé la réinitialisation du mot de passe de votre compte Medical Staff.</p>' +
-          `<p style="text-align:center;margin:24px 0"><a href="${esc(link)}" style="background:#0d6efd;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none">Choisir un nouveau mot de passe</a></p>` +
+          '<p>Bonjour,</p><p>Vous avez demandé la réinitialisation du mot de passe de votre compte medicalstaff.tn.</p>' +
+          `<p style="text-align:center;margin:24px 0"><a href="${esc(link)}" style="background:#1F5FAD;color:#fff;padding:12px 22px;border-radius:6px;text-decoration:none">Choisir un nouveau mot de passe</a></p>` +
           `<p style="font-size:13px;color:#6b7280">Ce lien est valable ${RESET_TTL_MIN} minutes et ne peut être utilisé qu'une seule fois. Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.</p>`);
       }
     }
@@ -87,7 +87,7 @@ r.on(['GET', 'POST'], '/reinitialiser-mot-de-passe', async (c) => {
         c.env.DB.prepare('DELETE FROM sessions WHERE utilisateur_id = ?').bind(reset.utilisateur_id),
       ]);
       sendMail(c, reset.email, 'Votre mot de passe a été modifié',
-        "<p>Bonjour,</p><p>Le mot de passe de votre compte Medical Staff vient d'être modifié. Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement.</p>");
+        "<p>Bonjour,</p><p>Le mot de passe de votre compte medicalstaff.tn vient d'être modifié. Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement.</p>");
       flash(c, 'success', 'Votre mot de passe a été modifié. Vous pouvez maintenant vous connecter.');
       return redirect(c, `/${reset.type}/login`);
     }

@@ -56,7 +56,7 @@ r.on(['GET', 'POST'], '/register', async (c) => {
          VALUES (?,?,?,?,?,?,?,?,?,?)`,
         uid, d.nom_etablissement, d.type_etablissement, d.matricule_fiscal || null, d.adresse || null, d.ville, d.telephone || null, d.contact_nom, d.contact_prenom, d.contact_fonction || null);
       await loginUser(c, uid);
-      sendMail(c, d.email, 'Bienvenue sur Medical Staff', `<p>Bonjour ${esc(d.contact_prenom)},</p><p>L'établissement <strong>${esc(d.nom_etablissement)}</strong> est maintenant inscrit. Activez votre abonnement pour publier des offres et accéder à la CVthèque.</p>`);
+      sendMail(c, d.email, 'Bienvenue sur medicalstaff.tn', `<p>Bonjour ${esc(d.contact_prenom)},</p><p>L'établissement <strong>${esc(d.nom_etablissement)}</strong> est maintenant inscrit. Activez votre abonnement pour publier des offres et accéder à la CVthèque.</p>`);
       flash(c, 'success', 'Établissement inscrit ! Activez votre abonnement pour commencer à recruter.');
       return redirect(c, '/recruteur/abonnement');
     }
@@ -229,7 +229,7 @@ r.on(['GET', 'POST'], '/abonnement', async (c) => {
     const fin = addDays(addYears(debut, 1), -1);
     const ref = `MS-${today().replace(/-/g, '')}-${randomHex(3).toUpperCase()}`;
     await run(db, 'INSERT INTO abonnements (recruteur_id, montant, date_debut, date_fin, statut, reference_paiement) VALUES (?,?,?,?,?,?)', rec.id, prix, debut, fin, 'actif', ref);
-    sendMail(c, c.get('user')!.email, 'Confirmation de votre abonnement Medical Staff',
+    sendMail(c, c.get('user')!.email, 'Confirmation de votre abonnement medicalstaff.tn',
       `<p>Bonjour,</p><p>Votre abonnement annuel (${prix} TND) est actif du ${dateFr(debut)} au ${dateFr(fin)}.</p><p>Référence de paiement : <strong>${esc(ref)}</strong></p>`);
     flash(c, 'success', `Paiement accepté ! Votre abonnement est actif jusqu'au ${dateFr(fin)}.`);
     return redirect(c, '/recruteur/dashboard');
@@ -684,14 +684,16 @@ r.get('/cv/:id{[0-9]+}/pdf', async (c) => {
   if (res instanceof Response) return res;
   const ct = res.cand!;
   const eia = await dernierEntretienIa(c.env.DB, ct.id);
-  const css = `@page{size:A4;margin:14mm 16mm}*{box-sizing:border-box}body{font-family:Poppins,Arial,sans-serif;font-size:11.5px;color:#1f2937;margin:0;background:#eef2f7}
+  const css = `@page{size:A4;margin:14mm 16mm}*{box-sizing:border-box}body{font-family:Poppins,Arial,sans-serif;font-size:11.5px;color:#14212B;margin:0;background:#eef2f7}
 .sheet{max-width:210mm;margin:16px auto;background:#fff;padding:18mm 16mm;box-shadow:0 4px 20px rgba(0,0,0,.08)}
-.head{display:flex;gap:18px;align-items:center;background:#0d6efd;color:#fff;padding:16px;border-radius:8px}
-.head img{width:92px;height:92px;border-radius:50%;object-fit:cover;border:3px solid #fff;background:#e7f1ff}
-h1{font-size:22px;margin:0}h2{font-size:12.5px;color:#0d6efd;border-bottom:2px solid #0d6efd;padding-bottom:3px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.03em}
-.muted{color:#6b7280}.item{margin-bottom:8px;break-inside:avoid}.tag{display:inline-block;background:#e7f1ff;color:#0d6efd;padding:2px 8px;border-radius:9px;margin:0 4px 4px 0}
+.brand{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.brand img{height:34px}.brand span{font-size:9.5px;color:#5B6770;letter-spacing:.12em}
+.band{height:4px;background:linear-gradient(90deg,#2BA84A 0 28%,#1F5FAD 28% 72%,#14B8B0 72% 100%);margin-bottom:14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.head{display:flex;gap:18px;align-items:center;background:#0E2236;color:#fff;padding:16px;border-radius:8px}
+.head img{width:92px;height:92px;border-radius:50%;object-fit:cover;border:3px solid #fff;background:#E6EEF8}
+h1{font-size:22px;margin:0}h2{font-size:12.5px;color:#1F5FAD;border-bottom:2px solid #14B8B0;padding-bottom:3px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.03em}
+.muted{color:#6b7280}.item{margin-bottom:8px;break-inside:avoid}.tag{display:inline-block;background:#E6EEF8;color:#1F5FAD;padding:2px 8px;border-radius:9px;margin:0 4px 4px 0}
 table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}.bar{background:#e5e7eb;height:8px;border-radius:4px}.bar div{height:8px;border-radius:4px}
-.toolbar{max-width:210mm;margin:16px auto 0;display:flex;justify-content:flex-end;gap:8px}.toolbar button{background:#0d6efd;color:#fff;border:0;padding:10px 18px;border-radius:6px;font:inherit;cursor:pointer}
+.toolbar{max-width:210mm;margin:16px auto 0;display:flex;justify-content:flex-end;gap:8px}.toolbar button{background:#1F5FAD;color:#fff;border:0;padding:10px 18px;border-radius:6px;font:inherit;cursor:pointer}
 .foot{margin-top:18px;text-align:center;font-size:9.5px;color:#9ca3af}
 @media print{body{background:#fff}.sheet{margin:0;padding:0;box-shadow:none;max-width:none}.toolbar{display:none}.head{-webkit-print-color-adjust:exact;print-color-adjust:exact}.bar div,.tag{-webkit-print-color-adjust:exact;print-color-adjust:exact}}`;
   const html = (
@@ -704,6 +706,8 @@ table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}.b
       <body>
         <div class="toolbar"><button type="button" id="print">Télécharger / imprimer en PDF</button></div>
         <div class="sheet">
+          <div class="brand"><img src="/assets/img/logo-entete.svg" alt="medicalstaff.tn" /><span>CV CONFIDENTIEL</span></div>
+          <div class="band"></div>
           <div class="head">
             <img src={photoUrl(ct.photo)} alt="" />
             <div><h1>{ct.prenom} {ct.nom}</h1><div style="font-size:14px">{ct.poste_recherche}</div>
@@ -762,7 +766,7 @@ table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}.b
               <p class="muted" style="font-size:9.5px">Entretien passé le {dateFr(eia.termine_le)} · score indicatif fondé uniquement sur le contenu des réponses.</p>
             </>
           )}
-          <div class="foot">CV généré par Medical Staff le {dateFr(today())} – document confidentiel</div>
+          <div class="foot">CV généré par medicalstaff.tn le {dateFr(today())} – document confidentiel</div>
         </div>
         <script>{raw("document.getElementById('print').addEventListener('click',function(){window.print()});")}</script>
       </body></html>
@@ -899,7 +903,7 @@ async function entretienForm(c: Ctx) {
   const events = evs.filter((e) => e.id !== entId).map((e) => ({
     title: `${plageHoraire(e.date_debut, e.date_fin)} · ${e.prenom} ${e.nom}`,
     start: e.date_debut.replace(' ', 'T'), end: e.date_fin.replace(' ', 'T'),
-    color: e.statut === 'confirme' ? '#0d6efd' : '#6c757d',
+    color: e.statut === 'confirme' ? '#1F5FAD' : '#6c757d',
   }));
   const sel = v.debut && v.fin ? { start: v.debut, end: v.fin } : null;
   const json = (x: unknown) => JSON.stringify(x).replace(/</g, '\\u003c');
@@ -949,7 +953,7 @@ async function entretienForm(c: Ctx) {
           <div class="card border-0 shadow-sm"><div class="card-body"><div id="calendar"></div></div></div>
           <div class="small text-muted mt-2">
             <span class="legend" style="background:#198754"></span>Créneau sélectionné
-            <span class="legend ms-3" style="background:#0d6efd"></span>Entretien confirmé
+            <span class="legend ms-3" style="background:#1F5FAD"></span>Entretien confirmé
             <span class="legend ms-3" style="background:#6c757d"></span>Entretien en attente
           </div>
         </div>
