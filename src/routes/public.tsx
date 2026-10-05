@@ -35,10 +35,10 @@ r.get('/', async (c) => {
   ];
   return page(c, { title: 'Accueil', active: 'home' }, (
     <>
-      <section class="hero">
+      <section class="hero" aria-label="Infirmière dans un couloir d'hôpital">
         <div class="container">
           <div class="row align-items-center g-4 g-lg-5">
-            <div class="col-lg-6">
+            <div class="col-lg-7 col-xl-6">
               <span class="badge rounded-pill bg-light text-primary mb-3"><i class="fa-solid fa-heart-pulse me-1"></i>N°1 du recrutement paramédical en Tunisie</span>
               <h1 class="display-5 fw-bold text-white">Les talents de la santé rencontrent les établissements qui les recherchent</h1>
               <p class="lead text-white-50 mt-3">Infirmiers, sages-femmes, techniciens, kinésithérapeutes… Trouvez votre prochain poste ou recrutez les meilleurs profils en quelques clics.</p>
@@ -48,7 +48,6 @@ r.get('/', async (c) => {
                 <button class="btn btn-primary px-4"><i class="fa-solid fa-magnifying-glass me-1"></i>Rechercher</button>
               </form>
             </div>
-            <div class="col-lg-6 d-none d-lg-block"><img src="/assets/img/hero.svg" class="img-fluid" alt="Équipe médicale" /></div>
           </div>
         </div>
       </section>
