@@ -1,9 +1,6 @@
-Options -Indexes
-DirectoryIndex index.php
-
+# Si la racine web de l'hébergement est ce dossier (et non public/),
+# toutes les requêtes sont redirigées vers public/ : le code source reste inaccessible.
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    # Interdire l'accès direct aux dossiers internes
-    RewriteRule ^(config|includes|database|storage|vendor)(/|$) - [F,L]
-    RewriteRule ^composer\.(json|lock)$ - [F,L]
+    RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>

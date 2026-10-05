@@ -246,7 +246,7 @@ function upload_photo(array $file): ?string
         throw new RuntimeException('Format de photo non autorisé (JPG, PNG ou GIF uniquement).');
     }
     $name = bin2hex(random_bytes(12)) . '.' . $allowed[$info[2]];
-    $dir = APP_ROOT . '/uploads/photos';
+    $dir = PUBLIC_ROOT . '/uploads/photos';
     if (!is_dir($dir)) {
         mkdir($dir, 0775, true);
     }

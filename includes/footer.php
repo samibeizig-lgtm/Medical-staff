@@ -9,16 +9,16 @@
             <div class="col-6 col-md-2">
                 <h6 class="text-white">Plateforme</h6>
                 <ul class="list-unstyled small">
-                    <li><a href="<?= url('mission.php') ?>">Notre mission</a></li>
-                    <li><a href="<?= url('offres.php') ?>">Offres d'emploi</a></li>
-                    <li><a href="<?= url('demandes.php') ?>">Demandes d'emploi</a></li>
+                    <li><a href="<?= url('mission') ?>">Notre mission</a></li>
+                    <li><a href="<?= url('offres') ?>">Offres d'emploi</a></li>
+                    <li><a href="<?= url('demandes') ?>">Demandes d'emploi</a></li>
                 </ul>
             </div>
             <div class="col-6 col-md-3">
                 <h6 class="text-white">Espaces</h6>
                 <ul class="list-unstyled small">
-                    <li><a href="<?= url('candidat/register.php') ?>">Je suis candidat</a></li>
-                    <li><a href="<?= url('recruteur/register.php') ?>">Je suis un établissement</a></li>
+                    <li><a href="<?= url('candidat/register') ?>">Je suis candidat</a></li>
+                    <li><a href="<?= url('recruteur/register') ?>">Je suis un établissement</a></li>
                 </ul>
             </div>
             <div class="col-md-3">
@@ -28,7 +28,7 @@
             </div>
         </div>
         <hr class="border-secondary">
-        <p class="small text-center mb-0">&copy; <?= date('Y') ?> Medical Staff – Tous droits réservés.</p>
+        <p class="small text-center mb-0">&copy; <?= date('Y') ?> Medical Staff – Tous droits réservés · <a href="<?= url('admin/login') ?>">Administration</a></p>
     </div>
 </footer>
 
@@ -50,7 +50,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="<?= url('assets/vendor/bootstrap/bootstrap.bundle.min.js') ?>"></script>
 <script src="<?= url('assets/js/app.js') ?>"></script>
 <script src="<?= url('assets/js/chatbot.js') ?>"></script>
 <?= $extraScripts ?? '' ?>

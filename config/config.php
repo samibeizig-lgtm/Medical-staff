@@ -15,6 +15,16 @@ $config = [
     'base_url'   => getenv('MS_BASE_URL') ?: '',
     'site_name'  => 'Medical Staff',
     'mail_from'  => getenv('MS_MAIL_FROM') ?: 'no-reply@medicalstaff.tn',
+    'mail_from_name' => getenv('MS_MAIL_FROM_NAME') ?: 'Medical Staff',
+
+    // SMTP (PHPMailer). Laisser smtp_host vide pour utiliser mail() de PHP.
+    // Exemples : Gmail → smtp.gmail.com / 587 / tls (mot de passe d'application)
+    //            Brevo → smtp-relay.brevo.com / 587 / tls
+    'smtp_host'   => getenv('MS_SMTP_HOST') ?: '',
+    'smtp_port'   => (int)(getenv('MS_SMTP_PORT') ?: 587),
+    'smtp_user'   => getenv('MS_SMTP_USER') ?: '',
+    'smtp_pass'   => getenv('MS_SMTP_PASS') ?: '',
+    'smtp_secure' => getenv('MS_SMTP_SECURE') ?: 'tls', // 'tls', 'ssl' ou 'none' (relais local sans chiffrement)
     // Si true, les emails sont aussi journalisés dans storage/mails.log
     'mail_log'   => true,
 

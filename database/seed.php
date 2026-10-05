@@ -4,10 +4,13 @@
  * Comptes créés (mot de passe : demo1234)
  *   - candidat : amira@demo.tn, youssef@demo.tn, salma@demo.tn, mehdi@demo.tn, ines@demo.tn
  *   - établissement : clinique@demo.tn (abonné), hopital@demo.tn (non abonné)
+ *   - administrateur : admin@demo.tn
  */
 require dirname(__DIR__) . '/includes/db.php';
 $GLOBALS['config'] = require dirname(__DIR__) . '/config/config.php';
 define('APP_ROOT', dirname(__DIR__));
+date_default_timezone_set('Africa/Tunis');
+define('PUBLIC_ROOT', APP_ROOT . '/public');
 require APP_ROOT . '/includes/data.php';
 require APP_ROOT . '/includes/functions.php';
 require APP_ROOT . '/includes/personality.php';
@@ -21,6 +24,9 @@ function user(string $email, string $type, string $pass): int
     db_exec('INSERT INTO utilisateurs (email, mot_de_passe, type) VALUES (?,?,?)', [$email, $pass, $type]);
     return (int)db()->lastInsertId();
 }
+
+// Administrateur
+user('admin@demo.tn', 'admin', $pass);
 
 // Établissements
 $recs = [];
@@ -104,5 +110,12 @@ db_exec('INSERT INTO candidatures (offre_id, candidat_id) VALUES (?,?), (?,?), (
 $d = new DateTime('next monday 10:00');
 db_exec("INSERT INTO entretiens (recruteur_id, candidat_id, offre_id, date_debut, date_fin, lieu, contact) VALUES (?,?,?,?,?,?,?)",
     [$recs[0], $candIds[1], $offreIds[1], $d->format('Y-m-d H:i:s'), $d->modify('+30 minutes')->format('Y-m-d H:i:s'), 'Clinique Les Oliviers, Avenue Taïeb Mhiri, Sousse', 'Karim Mansour – +216 73 000 000']);
+
+
+// Étalement des dates d'inscription sur les derniers mois (statistiques de l'administration)
+$decalages = ['amira@demo.tn' => 140, 'youssef@demo.tn' => 100, 'salma@demo.tn' => 65, 'mehdi@demo.tn' => 33, 'clinique@demo.tn' => 120, 'hopital@demo.tn' => 40];
+foreach ($decalages as $email => $jours) {
+    db_exec('UPDATE utilisateurs SET created_at = DATE_SUB(NOW(), INTERVAL ? DAY) WHERE email = ?', [$jours, $email]);
+}
 
 echo "Données de démonstration insérées. Mot de passe de tous les comptes : demo1234\n";

@@ -5,7 +5,7 @@ CREATE DATABASE IF NOT EXISTS medical_staff CHARACTER SET utf8mb4 COLLATE utf8mb
 USE medical_staff;
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS tests_personnalite, entretiens, cv_consultations, candidatures, langues, competences,
+DROP TABLE IF EXISTS password_resets, tests_personnalite, entretiens, cv_consultations, candidatures, langues, competences,
     experiences, diplomes, offres, abonnements, recruteurs, candidats, utilisateurs;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -14,6 +14,7 @@ CREATE TABLE utilisateurs (
     email VARCHAR(190) NOT NULL UNIQUE,
     mot_de_passe VARCHAR(255) NOT NULL,
     type ENUM('candidat','recruteur','admin') NOT NULL,
+    actif TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     derniere_connexion DATETIME NULL
 ) ENGINE=InnoDB;
@@ -178,4 +179,15 @@ CREATE TABLE tests_personnalite (
     reponses JSON NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_test_cand FOREIGN KEY (candidat_id) REFERENCES candidats(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE password_resets (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    utilisateur_id INT UNSIGNED NOT NULL,
+    token_hash CHAR(64) NOT NULL UNIQUE,
+    expire_le DATETIME NOT NULL,
+    utilise_le DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_reset_user FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id) ON DELETE CASCADE,
+    INDEX idx_reset_user (utilisateur_id, created_at)
 ) ENGINE=InnoDB;

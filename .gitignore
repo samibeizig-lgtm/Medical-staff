@@ -1,6 +1,6 @@
 /vendor/
 /config/config.local.php
 /storage/
-/uploads/photos/*
-!/uploads/photos/.gitkeep
+/public/uploads/photos/*
+!/public/uploads/photos/.gitkeep
 .DS_Store

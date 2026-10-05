@@ -6,7 +6,7 @@ function current_user(): ?array
     if ($user === false) {
         $user = null;
         if (!empty($_SESSION['user_id'])) {
-            $user = db_one('SELECT id, email, type FROM utilisateurs WHERE id = ?', [$_SESSION['user_id']]);
+            $user = db_one('SELECT id, email, type FROM utilisateurs WHERE id = ? AND actif = 1', [$_SESSION['user_id']]);
             if (!$user) {
                 unset($_SESSION['user_id']);
             }
@@ -27,16 +27,22 @@ function login_user(int $userId): void
     db_exec('UPDATE utilisateurs SET derniere_connexion = NOW() WHERE id = ?', [$userId]);
 }
 
-function attempt_login(string $email, string $password, string $type): ?array
+/**
+ * Vérifie les identifiants. Retourne l'utilisateur, ou un message d'erreur (string).
+ */
+function attempt_login(string $email, string $password, string $type): array|string
 {
-    $u = db_one('SELECT * FROM utilisateurs WHERE email = ? AND type = ?', [mb_strtolower($email), $type]);
-    if ($u && password_verify($password, $u['mot_de_passe'])) {
-        if (password_needs_rehash($u['mot_de_passe'], PASSWORD_BCRYPT)) {
-            db_exec('UPDATE utilisateurs SET mot_de_passe = ? WHERE id = ?', [password_hash($password, PASSWORD_BCRYPT), $u['id']]);
-        }
-        return $u;
+    $u = db_one('SELECT * FROM utilisateurs WHERE email = ? AND type = ?', [mb_strtolower(trim($email)), $type]);
+    if (!$u || !password_verify($password, $u['mot_de_passe'])) {
+        return 'Email ou mot de passe incorrect.';
     }
-    return null;
+    if (!(int)$u['actif']) {
+        return 'Ce compte a été suspendu. Contactez l\'administrateur de la plateforme.';
+    }
+    if (password_needs_rehash($u['mot_de_passe'], PASSWORD_BCRYPT)) {
+        db_exec('UPDATE utilisateurs SET mot_de_passe = ? WHERE id = ?', [password_hash($password, PASSWORD_BCRYPT), $u['id']]);
+    }
+    return $u;
 }
 
 function require_role(string $type): array
@@ -45,7 +51,7 @@ function require_role(string $type): array
     if (!$u || $u['type'] !== $type) {
         flash('warning', 'Veuillez vous connecter pour accéder à cet espace.');
         $_SESSION['redirect_after_login'] = $_SERVER['REQUEST_URI'] ?? null;
-        redirect($type === 'recruteur' ? 'recruteur/login.php' : 'candidat/login.php');
+        redirect(['recruteur' => 'recruteur/login', 'admin' => 'admin/login'][$type] ?? 'candidat/login');
     }
     return $u;
 }
@@ -82,7 +88,7 @@ function require_abonnement(array $recruteur): array
     $abo = abonnement_actif((int)$recruteur['id']);
     if (!$abo) {
         flash('warning', 'Cette fonctionnalité est réservée aux établissements disposant d\'un abonnement actif.');
-        redirect('recruteur/abonnement.php');
+        redirect('recruteur/abonnement');
     }
     return $abo;
 }
