@@ -1,0 +1,112 @@
+# Déploiement gratuit sur Cloudflare Workers + D1.
+# Secrets GitHub nécessaires (Settings → Secrets and variables → Actions) :
+#   CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+# Secrets optionnels :
+#   ADMIN_EMAIL, ADMIN_PASSWORD   → crée / met à jour le compte administrateur
+#   BREVO_API_KEY, MAIL_FROM      → envoi réel des emails via Brevo (sinon : journal dans l'administration)
+name: Déployer sur Cloudflare
+
+on:
+  workflow_dispatch:
+    inputs:
+      seed_demo:
+        description: "Charger les données de démonstration (comptes @demo.tn, mot de passe demo1234)"
+        type: boolean
+        default: false
+  push:
+    branches: [main, master, ccr-3771aaf9-52wuge]
+    paths-ignore: ["php/**", "**.md"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Vérifier la configuration
+        id: config
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice::Secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID absents : déploiement ignoré (voir le README)."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.config.outputs.ok == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.config.outputs.ok == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        if: steps.config.outputs.ok == 'true'
+        run: npm ci
+
+      - name: Vérifier le code (TypeScript)
+        if: steps.config.outputs.ok == 'true'
+        run: npm run check
+
+      - name: Créer ou retrouver la base D1
+        if: steps.config.outputs.ok == 'true'
+        run: |
+          get_id() { npx wrangler d1 list --json | jq -r '.[] | select(.name=="medical-staff") | .uuid'; }
+          ID=$(get_id)
+          if [ -z "$ID" ]; then
+            npx wrangler d1 create medical-staff
+            ID=$(get_id)
+          fi
+          [ -n "$ID" ] || { echo "::error::Impossible de créer la base D1 (vérifiez la permission « D1 : Edit » du jeton)."; exit 1; }
+          sed -i "s/00000000-0000-0000-0000-000000000000/$ID/" wrangler.jsonc
+          echo "Base D1 : $ID"
+
+      - name: Appliquer le schéma de la base
+        if: steps.config.outputs.ok == 'true'
+        run: npx wrangler d1 migrations apply medical-staff --remote
+
+      - name: Charger les données de démonstration
+        if: steps.config.outputs.ok == 'true' && inputs.seed_demo
+        run: npm run seed:remote
+
+      - name: Créer le compte administrateur
+        if: steps.config.outputs.ok == 'true'
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
+            npm run admin:remote
+          else
+            echo "::notice::ADMIN_EMAIL / ADMIN_PASSWORD non définis : aucun compte administrateur créé."
+          fi
+
+      - name: Déployer le Worker
+        if: steps.config.outputs.ok == 'true'
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+        run: |
+          if [ -n "$BREVO_API_KEY" ] && [ -n "$MAIL_FROM" ]; then
+            npx wrangler deploy --var MAIL_PROVIDER:brevo --var "MAIL_FROM:$MAIL_FROM"
+            echo "$BREVO_API_KEY" | npx wrangler secret put BREVO_API_KEY
+          else
+            npx wrangler deploy
+          fi
+
+      - name: Adresse du site
+        if: steps.config.outputs.ok == 'true'
+        run: |
+          echo "### ✅ Medical Staff est en ligne" >> "$GITHUB_STEP_SUMMARY"
+          echo "L'adresse est de la forme **https://medical-staff.<votre-sous-domaine>.workers.dev** (visible dans les journaux de l'étape « Déployer le Worker » ci-dessus et dans le tableau de bord Cloudflare → Workers & Pages)." >> "$GITHUB_STEP_SUMMARY"

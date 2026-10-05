@@ -2,45 +2,56 @@
 
 Plateforme tunisienne de recrutement **médical et paramédical** : elle met en relation les professionnels de santé (candidats) et les établissements de santé (cliniques, hôpitaux, cabinets, laboratoires…).
 
-**Stack** : PHP 8.1+ (PDO) · MySQL/MariaDB · Bootstrap 5 · Font Awesome · FullCalendar · Dompdf · PHPMailer · chatbot local / Ollama / Hugging Face.
-Toutes les bibliothèques front sont servies **localement** (`public/assets/vendor/`) : le site fonctionne sans connexion Internet, par exemple pour une démonstration.
+Cette version tourne **gratuitement sur Cloudflare** :
 
-## Installation
+| Élément | Technologie | Coût |
+|---|---|---|
+| Site et logique | Cloudflare Workers + [Hono](https://hono.dev) (TypeScript, pages générées côté serveur) | Gratuit jusqu'à 100 000 requêtes / jour |
+| Base de données | Cloudflare D1 (SQLite), photos comprises | Gratuit jusqu'à 5 Go |
+| Fichiers statiques | Workers Static Assets (Bootstrap, Font Awesome, FullCalendar, Poppins servis localement) | Gratuit |
+| Emails | Journal consultable dans l'administration, ou envoi réel via Brevo / Resend | Gratuit (300 emails / jour avec Brevo) |
+| Chatbot | Moteur local, ou Workers AI (optionnel) | Gratuit |
 
-```bash
-# 1. Dépendances PHP (Dompdf, PHPMailer)
-composer install
+> La version d'origine en **PHP / MySQL** est conservée dans le dossier [`php/`](php/README.md).
 
-# 2. Base de données
-mysql -u root -p < database/schema.sql
+---
 
-# 3. Configuration locale (base de données, SMTP)
-cp config/config.local.example.php config/config.local.php
+## 🚀 Mettre le site en ligne (gratuit, sans carte bancaire)
 
-# 4. Compte administrateur
-php database/create_admin.php admin@exemple.tn "MotDePasseSolide"
+Comptez environ 15 minutes. Tout se fait depuis le navigateur.
 
-# 5. (optionnel) Données de démonstration
-php database/seed.php
+### 1. Créer un compte Cloudflare
 
-# 6. Serveur de développement
-php -S localhost:8000 -t public public/index.php
-```
+1. Inscrivez-vous sur <https://dash.cloudflare.com/sign-up> (gratuit).
+2. Dans le menu de gauche, ouvrez **Workers & Pages** (en anglais : *Compute (Workers)*). À la première visite, Cloudflare vous demande de **choisir un sous-domaine** `xxx.workers.dev` : choisissez-en un (par exemple `medicalstaff`). Votre site aura l'adresse `https://medical-staff.medicalstaff.workers.dev`.
+3. Notez votre **Account ID** : il est affiché sur la page d'accueil de **Workers & Pages**, colonne de droite (ou dans l'URL du tableau de bord : `dash.cloudflare.com/<ACCOUNT_ID>/…`).
 
-**Mise à jour d'une base existante** (créée avec la première version) :
-`mysql -u root -p medical_staff < database/migrations/001_admin_et_mot_de_passe.sql`
+### 2. Créer un jeton d'API
 
-### Déploiement (Apache)
+1. Allez sur <https://dash.cloudflare.com/profile/api-tokens> → **Create Token**.
+2. Choisissez le modèle **Edit Cloudflare Workers** → **Use template**.
+3. Dans **Permissions**, cliquez sur **+ Add more** et ajoutez : `Account` → `D1` → `Edit`.
+4. **Continue to summary** → **Create Token**, puis copiez le jeton (il ne sera plus affiché).
 
-- **Recommandé** : faire pointer la racine web (DocumentRoot) sur le dossier `public/`.
-- **Hébergement mutualisé** où la racine ne peut pas être changée : déposer tout le projet, le `.htaccess` racine redirige automatiquement vers `public/`. Le code source (`config/`, `includes/`, `pages/`…) reste inaccessible depuis le web.
-- `mod_rewrite` doit être actif. Si le site est dans un sous-dossier (ex. `/medical-staff`), définir `base_url` à `/medical-staff`.
+### 3. Ajouter les secrets dans GitHub
 
-### Emails (SMTP)
+Dans ce dépôt GitHub : **Settings → Secrets and variables → Actions → New repository secret**.
 
-Renseigner `smtp_host`, `smtp_port`, `smtp_user`, `smtp_pass` et `smtp_secure` (`tls`, `ssl` ou `none`) dans `config/config.local.php` ou via les variables d'environnement `MS_SMTP_*`.
-Exemples : Gmail (`smtp.gmail.com`, 587, `tls`, avec un mot de passe d'application), Brevo (`smtp-relay.brevo.com`, 587, `tls`).
-Sans `smtp_host`, la fonction `mail()` de PHP est utilisée. Chaque envoi est aussi journalisé dans `storage/mails.log`.
+| Nom | Valeur | Obligatoire |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | le jeton de l'étape 2 | ✅ |
+| `CLOUDFLARE_ACCOUNT_ID` | l'Account ID de l'étape 1 | ✅ |
+| `ADMIN_EMAIL` | votre email d'administrateur | recommandé |
+| `ADMIN_PASSWORD` | un mot de passe solide (10 caractères minimum) | recommandé |
+| `BREVO_API_KEY` et `MAIL_FROM` | pour envoyer de vrais emails (voir plus bas) | facultatif |
+
+### 4. Lancer le déploiement
+
+1. Onglet **Actions** du dépôt → workflow **Déployer sur Cloudflare** → **Run workflow**.
+2. Cochez **Charger les données de démonstration** si vous voulez des comptes de test, puis **Run workflow**.
+3. Après 1 à 2 minutes, le site est en ligne. L'adresse s'affiche dans les journaux de l'étape « Déployer le Worker » (et dans Cloudflare → Workers & Pages → `medical-staff`).
+
+Le workflow crée la base D1 au premier lancement, applique le schéma, crée le compte administrateur et déploie le site. Ensuite, **chaque `git push` redéploie automatiquement**.
 
 ### Comptes de démonstration (mot de passe `demo1234`)
 
@@ -51,48 +62,105 @@ Sans `smtp_host`, la fonction `mail()` de PHP est utilisée. Chaque envoi est au
 | Établissement abonné | `clinique@demo.tn` |
 | Établissement non abonné | `hopital@demo.tn` |
 
+> ⚠️ Ces comptes ont un mot de passe public : ne chargez les données de démonstration que pour tester, puis supprimez les comptes `@demo.tn` depuis l'administration avant d'ouvrir le site à de vrais utilisateurs.
+
 Paiement de l'abonnement simulé : carte `4242 4242 4242 4242`, `12/30`, CVV `123`.
+
+---
+
+## ✉️ Emails
+
+Par défaut (`MAIL_PROVIDER = "log"`), **aucun email n'est envoyé** : ils sont enregistrés dans la base et lisibles dans **Administration → Emails**. C'est idéal pour tester : les liens de réinitialisation de mot de passe y apparaissent.
+
+Pour de vrais envois, gratuitement avec **Brevo** (300 emails / jour) :
+
+1. Créez un compte sur <https://www.brevo.com>, puis validez votre adresse d'expéditeur dans **Senders, Domains & Dedicated IPs → Senders**.
+2. Créez une clé dans **SMTP & API → API Keys**.
+3. Ajoutez dans GitHub les secrets `BREVO_API_KEY` (la clé) et `MAIL_FROM` (l'adresse d'expéditeur validée), puis relancez le workflow.
+
+Resend est aussi pris en charge (`MAIL_PROVIDER = "resend"` + secret `RESEND_API_KEY`), mais il exige un nom de domaine vérifié pour écrire à d'autres adresses que la vôtre.
+
+## 🤖 Chatbot Dr. Jobs
+
+Le moteur local répond instantanément aux questions courantes (CV, salaires, diplômes, entretiens, abonnement…). Pour les questions complexes, vous pouvez activer **Workers AI** (gratuit dans la limite d'un quota quotidien) :
+
+1. dans `wrangler.jsonc`, décommentez la ligne `"ai": { "binding": "AI" }` ;
+2. passez `CHATBOT_ENGINE` à `"workers-ai"` ;
+3. ajoutez au jeton d'API la permission `Account` → `Workers AI` → `Read`.
+
+L'historique de conversation est limité aux 10 derniers messages.
+
+---
+
+## 💻 Développement local
+
+Prérequis : [Node.js](https://nodejs.org) 22 ou plus récent.
+
+```bash
+npm install
+npm run db:migrate:local      # crée la base D1 locale
+npm run seed:local            # données de démonstration (facultatif)
+npm run admin:local -- admin@exemple.tn "MotDePasseSolide"
+npm run dev                   # http://localhost:8787
+```
+
+`npm run check` vérifie le code TypeScript.
+
+### Déployer en ligne de commande (sans GitHub Actions)
+
+```bash
+npx wrangler login
+npx wrangler d1 create medical-staff        # copiez l'identifiant affiché dans wrangler.jsonc (database_id)
+npm run db:migrate:remote
+npm run admin:remote -- admin@exemple.tn "MotDePasseSolide"
+npm run seed:remote                          # facultatif
+npm run deploy
+```
+
+---
 
 ## Structure
 
 ```
-public/            Seule partie exposée au web
-  index.php        Front controller (toutes les requêtes)
-  assets/          css, js, img, vendor (Bootstrap, Font Awesome, FullCalendar, Poppins)
-  uploads/photos/  Photos de profil (exécution de scripts interdite)
-pages/             Une page = un fichier, associé à une URL propre
-  accueil, mission, offres, demandes, logout, 404,
-  mot-de-passe-oublie, reinitialiser-mot-de-passe
-  candidat/        register, login, dashboard, cv, test, offres, entretiens
-  recruteur/       register, login, dashboard, abonnement, offres, offre_form, cvtheque,
-                   candidatures, cv, cv_pdf, suggestions, entretien, entretiens
-  admin/           login, dashboard, utilisateurs, offres, abonnements
-  api/             chatbot, competences
-includes/          bootstrap, router, db, auth, functions, data (référentiels), offres,
-                   personality, matching (IA), chatbot, mailer, password_reset, admin, header/footer
-config/            config.php (+ config.local.php non versionné)
-database/          schema.sql, migrations/, seed.php, create_admin.php
-storage/           mails.log, admin.log (non versionné)
+src/
+  index.tsx              Point d'entrée : middlewares, routes, pages 404 / erreur
+  routes/
+    public.tsx           Accueil, mission, offres, demandes anonymisées, photos
+    auth.tsx             Déconnexion, mot de passe oublié, réinitialisation
+    candidat.tsx         Inscription, tableau de bord, CV + photo, test, offres, entretiens
+    recruteur.tsx        Inscription, abonnement, offres, CVthèque, candidatures, CV + PDF,
+                         suggestions IA, calendrier d'entretiens
+    admin.tsx            Statistiques, utilisateurs, offres, abonnements, emails, journal
+    api.tsx              Chatbot, autocomplétion des compétences
+  lib/                   Base D1, sessions / CSRF, hachage, dates, emails, données de référence,
+                         test de personnalité, matching IA, chatbot
+  views/                 Gabarit de page et composants (JSX)
+public/assets/           CSS, JavaScript, images, bibliothèques (servis directement par Cloudflare)
+migrations/              Schéma SQL de la base D1
+scripts/                 Données de démonstration, création d'administrateur
+.github/workflows/       Déploiement automatique
+php/                     Version d'origine PHP / MySQL
 ```
-
-### URLs
-
-`/chemin` correspond à `pages/chemin.php` : `/offres`, `/candidat/cv`, `/recruteur/cvtheque`, `/admin/utilisateurs`…
-`/candidat`, `/recruteur` et `/admin` mènent au tableau de bord correspondant. Les anciennes adresses en `.php` sont redirigées (301) vers les nouvelles.
 
 ## Fonctionnalités
 
 - **Visiteur** : accueil, mission, offres filtrables (poste, gouvernorat, contrat), demandes d'emploi anonymisées.
-- **Candidat** : CV structuré (photo ≤ 2 Mo, 24 gouvernorats, diplômes, expériences, compétences avec autocomplétion, langues, prétentions, confidentialité des coordonnées) ; test de personnalité de 30 questions (Big Five + adaptation au milieu médical, jauges, portrait) ; bouton « Postuler » verrouillé tant que le CV et le test ne sont pas complétés ; emails de confirmation ; validation / refus des entretiens.
-- **Établissement** : abonnement annuel 1 000 TND (paiement simulé) ; gestion des offres avec compétences en tags ; CVthèque multicritères ; candidatures ; CV détaillé (consultations journalisées) et PDF avec photo ; **suggestions IA 🧠** (compétences 45 %, diplôme 25 %, expérience 20 %, bonus personnalité 10 %) ; calendrier d'entretiens (créneaux de 30 min, 8h–18h, détection des chevauchements).
-- **Administrateur** : tableau de bord (indicateurs clés, inscriptions par mois, offre et demande par métier) ; gestion des utilisateurs (recherche, suspension, réactivation, suppression) ; modération des offres ; activation manuelle d'abonnements (virement, chèque) et annulation. Toutes les actions sont tracées dans `storage/admin.log`.
-- **Mot de passe oublié** : lien à usage unique envoyé par email, valable 1 heure, 3 demandes maximum par heure, sans révéler si l'adresse existe.
-- **Chatbot Dr. Jobs** : moteur local par intentions, bascule optionnelle vers Ollama (`MS_CHATBOT_ENGINE=ollama`) ou Hugging Face (`huggingface` + `MS_HF_TOKEN`), historique limité aux 10 derniers messages.
+- **Candidat** : CV structuré (photo redimensionnée dans le navigateur, 24 gouvernorats, diplômes, expériences, compétences avec autocomplétion, langues, prétentions, confidentialité des coordonnées) ; test de personnalité de 30 questions (Big Five + adaptation au milieu médical, jauges, portrait) ; bouton « Postuler » verrouillé tant que le CV et le test ne sont pas complétés ; emails de confirmation ; validation ou refus des entretiens.
+- **Établissement** : abonnement annuel de 1 000 TND (paiement simulé) ; gestion des offres ; CVthèque multicritères ; candidatures ; CV détaillé (consultations enregistrées) ; **CV en PDF** (page imprimable avec photo → « Enregistrer en PDF » du navigateur) ; **suggestions IA 🧠** (compétences 45 %, diplôme 25 %, expérience 20 %, bonus personnalité 10 %) ; calendrier d'entretiens FullCalendar (créneaux de 30 min, 8h–18h, chevauchements refusés).
+- **Administrateur** : statistiques, gestion des utilisateurs (suspension avec déconnexion immédiate, réactivation, suppression), modération des offres, activation manuelle et annulation d'abonnements, journal des emails et des actions.
+- **Mot de passe oublié** : lien à usage unique valable 1 heure, 3 demandes maximum par heure, sans révéler si l'adresse existe ; toutes les sessions sont fermées après le changement.
 
 ## Sécurité
 
-Mots de passe bcrypt · `session_regenerate_id` à la connexion · cookies `HttpOnly` / `SameSite=Lax` · jeton CSRF sur tous les formulaires et l'API · requêtes préparées PDO · échappement HTML systématique · contrôle d'accès par rôle et par abonnement · comptes suspendus déconnectés immédiatement · jetons de réinitialisation stockés hachés (SHA-256) · Content-Security-Policy restrictive (aucune ressource externe) · code source hors de la racine web · upload validé par `getimagesize` et renommé aléatoirement · déconnexion centralisée avec suppression du cookie · en-têtes anti-cache · PWA désactivée.
+- **Mots de passe** : PBKDF2-SHA256 avec sel aléatoire. 50 000 itérations par défaut, pour respecter la limite de calcul de l'offre gratuite (10 ms par requête) ; réglable jusqu'à 100 000 sur un plan payant via `PASSWORD_ITERATIONS`, sans invalider les comptes existants.
+- **Connexion** : limitée à 5 échecs par compte ou 30 par adresse IP sur 15 minutes.
+- **Sessions** : stockées en base (jeton haché), cookies `HttpOnly` / `Secure` / `SameSite=Lax`, déconnexion par formulaire protégé.
+- **CSRF** : jeton sur tous les formulaires et l'API, en plus d'une vérification de l'origine des requêtes.
+- **Requêtes et affichage** : toutes les requêtes sont paramétrées, et l'affichage JSX échappe automatiquement les données.
+- **Content-Security-Policy** : restrictive, aucune ressource externe.
+- **Photos** : type vérifié par signature binaire, adresse aléatoire non devinable (l'anonymat des candidats est préservé).
+- **Accès** : contrôle par rôle et par abonnement. Les jetons de réinitialisation sont stockés hachés.
 
 ## Évolutions possibles
 
-Vérification d'identité et badge « Vérifié », entretiens vidéo asynchrones, recommandation de formations, analyse prédictive des besoins, application mobile, messagerie interne, paiement en ligne réel (Konnect, Paymee, carte e-Dinar).
+Vérification d'identité et badge « Vérifié », entretiens vidéo asynchrones, recommandation de formations, analyse prédictive des besoins, application mobile, messagerie interne, paiement en ligne réel (Konnect, Paymee, carte e-Dinar), nom de domaine personnalisé (gratuit à brancher sur Cloudflare).

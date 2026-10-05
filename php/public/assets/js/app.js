@@ -22,33 +22,14 @@
       if (e.target.checked) fin.value = '';
     }
   });
-  // Photo : aperçu + redimensionnement dans le navigateur (400 px max, JPEG) avant l'envoi
+  // Aperçu de la photo
   const photo = document.getElementById('photo-input');
   if (photo) {
     photo.addEventListener('change', () => {
       const f = photo.files[0];
       if (!f) return;
-      if (!/^image\/(jpeg|png|gif)$/.test(f.type)) { alert('Format de photo non autorisé (JPG, PNG ou GIF).'); photo.value = ''; return; }
       if (f.size > 2 * 1024 * 1024) { alert('La photo ne doit pas dépasser 2 Mo.'); photo.value = ''; return; }
-      const img = new Image();
-      img.onload = () => {
-        const max = 400, ratio = Math.min(1, max / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * ratio);
-        canvas.height = Math.round(img.height * ratio);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(blob => {
-          if (!blob) return;
-          try {
-            const dt = new DataTransfer();
-            dt.items.add(new File([blob], 'photo.jpg', { type: 'image/jpeg' }));
-            photo.files = dt.files;
-          } catch (e) { /* navigateur ancien : le fichier d'origine est envoyé */ }
-          document.getElementById('photo-preview').src = URL.createObjectURL(blob);
-        }, 'image/jpeg', 0.85);
-        URL.revokeObjectURL(img.src);
-      };
-      img.src = URL.createObjectURL(f);
+      document.getElementById('photo-preview').src = URL.createObjectURL(f);
     });
   }
 })();

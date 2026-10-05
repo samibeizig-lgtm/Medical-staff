@@ -1,6 +1,5 @@
-/vendor/
-/config/config.local.php
-/storage/
-/public/uploads/photos/*
-!/public/uploads/photos/.gitkeep
+node_modules/
+.wrangler/
+.dev.vars
+dist/
 .DS_Store

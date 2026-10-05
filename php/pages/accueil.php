@@ -17,7 +17,7 @@ require APP_ROOT . '/includes/header.php';
 ?>
 <section class="hero">
     <div class="container">
-        <div class="row align-items-center g-5">
+        <div class="row align-items-center g-4 g-lg-5">
             <div class="col-lg-6">
                 <span class="badge rounded-pill bg-light text-primary mb-3"><i class="fa-solid fa-heart-pulse me-1"></i>N°1 du recrutement paramédical en Tunisie</span>
                 <h1 class="display-5 fw-bold text-white">Les talents de la santé rencontrent les établissements qui les recherchent</h1>
@@ -44,7 +44,7 @@ require APP_ROOT . '/includes/header.php';
 </section>
 
 <section class="container py-5">
-    <div class="row align-items-center g-5">
+    <div class="row align-items-center g-4 g-lg-5">
         <div class="col-lg-6">
             <h2 class="section-title">Une plateforme pensée pour la santé</h2>
             <p class="text-muted">Medical Staff met en relation les professionnels de santé avec les cliniques, hôpitaux, cabinets, laboratoires et centres spécialisés partout en Tunisie. Notre plateforme combine CV structuré, test de personnalité, matching intelligent et planification d'entretiens pour accélérer chaque recrutement.</p>

@@ -1,0 +1,40 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "medical-staff",
+  "main": "src/index.tsx",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "observability": { "enabled": true },
+
+  // Fichiers statiques (CSS, JS, images, bibliothèques) servis directement par Cloudflare
+  "assets": { "directory": "./public" },
+
+  // Base de données D1 (SQLite). L'identifiant est renseigné automatiquement
+  // par le workflow GitHub de déploiement, ou à la main après « wrangler d1 create ».
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "medical-staff",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Chatbot avec Workers AI (gratuit dans la limite du quota quotidien) : décommenter la ligne
+  // ci-dessous et passer CHATBOT_ENGINE à "workers-ai". Non actif par défaut, car « wrangler dev »
+  // exige alors une connexion au compte Cloudflare.
+  // "ai": { "binding": "AI" },
+
+  "vars": {
+    // "log" : les emails sont enregistrés en base et consultables dans l'administration (aucun compte nécessaire)
+    // "brevo" ou "resend" : envoi réel (clé API à définir en secret : BREVO_API_KEY ou RESEND_API_KEY)
+    "MAIL_PROVIDER": "log",
+    "MAIL_FROM": "no-reply@medicalstaff.tn",
+    "MAIL_FROM_NAME": "Medical Staff",
+    // "local" (réponses instantanées) ou "workers-ai" (questions complexes envoyées à un modèle Llama, voir "ai" ci-dessus)
+    "CHATBOT_ENGINE": "local",
+    "ABONNEMENT_PRIX": "1000",
+    // Coût du hachage des mots de passe (50000 adapté à l'offre gratuite ; jusqu'à 100000 sur un plan payant)
+    "PASSWORD_ITERATIONS": "50000"
+  }
+}
