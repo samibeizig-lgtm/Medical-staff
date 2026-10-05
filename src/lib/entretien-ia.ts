@@ -11,6 +11,10 @@ import { normalize } from './format';
 export const NB_QUESTIONS = 5;
 export const DUREE_MAX_SECONDES = 120;
 export const AUDIO_MAX_OCTETS = 3_000_000;
+/** Délai accordé après la durée maximale pour l'envoi de l'enregistrement (réseau lent) */
+export const DELAI_ENVOI_SECONDES = 90;
+/** Décompte avant l'affichage de la question (aucune préparation possible) */
+export const DECOMPTE_SECONDES = 3;
 
 export const CRITERES = {
   clarte: { label: 'Clarté', icon: 'fa-bullhorn', color: '#1F5FAD', aide: 'Phrases compréhensibles, idées exprimées simplement' },
@@ -101,6 +105,7 @@ export function choisirQuestions(poste: string | null | undefined): string[] {
   return [generales[0], ...specifiques, ...generales.slice(1)];
 }
 
+/** source : 'whisper', 'navigateur', 'aucune' (pas de réponse audible ou question interrompue) ; 'ecrit' pour d'anciens entretiens */
 export type Reponse = { texte: string; mode: 'oral' | 'ecrit'; duree: number; source: string };
 
 export type Evaluation = Record<Critere, number> & {

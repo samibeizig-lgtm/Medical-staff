@@ -241,3 +241,4 @@ h4, h5, h6, .h4, .h5, .h6 { font-weight: 500; }
 
 /* Poppins Bold : espace très étroit en petite taille → espacement des mots élargi dans les badges */
 .badge { font-weight: 600; word-spacing: .18em; }
+.ia-countdown { font-size: 4rem; font-weight: 700; color: var(--ms-bleu); line-height: 1; }

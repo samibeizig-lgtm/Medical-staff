@@ -101,13 +101,17 @@ Resend est aussi pris en charge (`MAIL_PROVIDER = "resend"` + secret `RESEND_API
 
 ## 🎙️ Entretien IA (communication)
 
-Depuis son espace, le candidat passe un entretien de **5 questions orales** de mise en situation (3 générales, 2 propres à son métier). Il répond au micro (2 minutes maximum par question), ou par écrit s'il n'a pas de micro.
+Depuis son espace, le candidat passe un entretien de **5 questions orales** de mise en situation (3 générales, 2 propres à son métier), **comme lors d'un vrai entretien** :
+
+- **Pas de temps de préparation** : après un décompte de 3 secondes, la question s'affiche et l'enregistrement démarre aussitôt. La question n'est envoyée au navigateur qu'à ce moment-là, elle n'est donc pas lisible à l'avance.
+- **Uniquement à l'oral** : 2 minutes maximum par question. Le micro est vérifié avant de commencer.
+- **Contrôles côté serveur** : l'heure d'affichage de chaque question est enregistrée ; une réponse hors délai est refusée ; recharger ou quitter la page pendant une question la compte « sans réponse » ; une réponse inaudible aussi (pas de seconde chance). En cas de coupure réseau, l'envoi peut être relancé dans le délai imparti.
 
 - **Transcription** : Whisper (`@cf/openai/whisper-large-v3-turbo`). L'audio n'est jamais stocké, seul le texte est conservé.
 - **Évaluation** : Llama 3.3 70B (Llama 3.1 8B en secours) note 5 critères sur 100 (clarté, structure, empathie, vocabulaire professionnel, adaptation à l'interlocuteur), avec une synthèse, des points forts et des conseils.
 - **Garde-fous** : seul le contenu des réponses est évalué (ni voix, ni visage, ni émotions) ; les réponses vides ou recopiées sont pénalisées ; le score est indicatif et ne bloque jamais une candidature ; consentement demandé ; 2 entretiens maximum par 24 h ; seul le dernier résultat est montré.
 - **Côté établissement** : score et détail sur le CV, le PDF, la CVthèque, les candidatures et les suggestions IA (sans modifier le score de matching).
-- **Sans Workers AI** (jeton sans la permission, quota épuisé, ou développement local) : transcription par la reconnaissance vocale du navigateur (Chrome / Edge) et **évaluation simplifiée** plafonnée à 80, signalée comme telle.
+- **Sans Workers AI** (jeton sans la permission, quota épuisé, ou développement local) : transcription par la reconnaissance vocale du navigateur (**Chrome ou Edge obligatoires**) et **évaluation simplifiée** plafonnée à 80, signalée comme telle.
 
 Le workflow de déploiement active Workers AI automatiquement. Si le jeton n'a pas la permission `Workers AI → Read`, il redéploie sans IA et affiche un avertissement. Coût indicatif : environ 300 à 500 « neurones » par entretien, soit une vingtaine d'entretiens par jour dans le quota gratuit (10 000 neurones par jour).
 
@@ -153,7 +157,7 @@ src/
     public.tsx           Accueil, mission, offres, demandes anonymisées, photos
     auth.tsx             Déconnexion, mot de passe oublié, réinitialisation
     candidat.tsx         Inscription, tableau de bord, CV + photo, test, offres, entretiens
-    entretien-ia.tsx     Entretien IA : questions orales, transcription, évaluation
+    entretien-ia.tsx     Entretien IA : questions orales chronométrées, transcription, évaluation
     recruteur.tsx        Inscription, abonnement, offres, CVthèque, candidatures, CV + PDF,
                          suggestions IA, calendrier d'entretiens
     admin.tsx            Statistiques, utilisateurs, offres, abonnements, emails, journal

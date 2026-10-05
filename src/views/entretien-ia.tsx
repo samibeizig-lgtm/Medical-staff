@@ -55,7 +55,7 @@ export function ResultatEntretienIa({ e, transcription = true, titre = 'Entretie
             {questions.map((q, i) => (
               <li class="mb-2"><strong>{q}</strong><br />
                 <span class="text-muted">{reponses[i]?.mode === 'ecrit' ? '✍️ Réponse écrite' : '🎙️ Réponse orale transcrite'}{reponses[i]?.duree ? ` · ${reponses[i].duree} s` : ''}</span>
-                <div class="transcript">{reponses[i]?.texte || '—'}</div></li>
+                <div class="transcript">{reponses[i]?.texte || <em class="text-muted">Sans réponse (rien d'audible, ou question interrompue)</em>}</div></li>
             ))}
           </ol>
         </details>
