@@ -119,10 +119,10 @@ Le workflow de déploiement active Workers AI automatiquement. Si le jeton n'a p
 
 Les candidats ne déclarent plus leurs compétences : ils les **obtiennent en réussissant des QCM chronométrés** propres à leur métier (menu « QCM compétences »). Seules les compétences validées figurent sur le CV et comptent dans le matching.
 
-- **15 questions tirées au hasard** : 3 questions sur chacune de 5 compétences, choisies parmi celles du métier (12 familles : infirmier, bloc, sage-femme, anesthésie, imagerie, laboratoire, pharmacie, rééducation, nutrition, aide-soignant, accueil/secrétariat, ambulancier) et du tronc commun (hygiène, gestes d'urgence, sécurité du patient, secret professionnel). Les compétences pas encore validées passent en priorité. Les 4 choix sont mélangés à chaque fois.
+- **15 questions tirées au hasard** : 3 questions sur chacune de 5 compétences, choisies parmi celles du métier (familles : infirmier, bloc, sage-femme, anesthésie, imagerie, laboratoire, laboratoire de PMA, pédiatrie, stérilisation, panseur, encadrement des soins pour les surveillant(e)s, pharmacie, rééducation, nutrition, aide-soignant, accueil/secrétariat, ambulancier) et du tronc commun (hygiène, gestes d'urgence, sécurité du patient, secret professionnel). Les compétences pas encore validées passent en priorité. Les 4 choix sont mélangés à chaque fois.
 - **30 secondes par question**, contrôlées par le serveur : les questions s'enchaînent sans retour en arrière, une réponse arrivée trop tard ou une page quittée compte faux, et la bonne réponse n'est jamais envoyée au navigateur.
 - Une compétence est **validée avec au moins 2 bonnes réponses sur 3**, et le reste. **2 QCM par semaine** au maximum.
-- Banque : 44 compétences, 208 questions (`src/lib/qcm-banque.ts`, la bonne réponse est toujours écrite en premier). Les offres choisissent leurs compétences requises dans ce même catalogue.
+- Banque : 48 compétences, 231 questions (`src/lib/qcm-banque.ts`, la bonne réponse est toujours écrite en premier). Les offres choisissent leurs compétences requises dans ce même catalogue.
 - La migration `0004` supprime les compétences saisies librement auparavant (non vérifiées).
 
 ## 📍 Proximité et score de matching

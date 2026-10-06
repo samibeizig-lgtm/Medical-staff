@@ -34,18 +34,23 @@ export function competenceDuCatalogue(s: string): string | null {
 export function familleQcm(poste: string | null | undefined): FamilleQcm {
   const p = normalize(poste ?? '');
   const cle =
-    p.includes('sage femme') ? 'sagefemme'
+    p.includes('surveillant') ? (p.includes('bloc') ? 'encadrement_bloc' : p.includes('radiologie') ? 'encadrement_radio' : 'encadrement')
+    : p.includes('sage femme') ? 'sagefemme'
     : p.includes('anesthesie') ? 'anesthesie'
+    : p.includes('sterilisation') ? 'sterilisation'
+    : p.includes('panseu') ? 'panseur'
+    : p.includes('pma') ? 'pma'
+    : p.includes('pediatrie') ? 'pediatrie'
     : /bloc|instrumentation|hygiene hospitaliere/.test(p) ? 'bloc'
     : p.includes('infirmier') ? 'infirmier'
     : p.includes('imagerie') || p.includes('radiologie') ? 'imagerie'
     : /laboratoire|biologie/.test(p) ? 'laboratoire'
     : p.includes('pharmacie') ? 'pharmacie'
     : /dieteticien|nutrition/.test(p) ? 'nutrition'
-    : /kinesitherapeute|orthophoniste|orthoptiste|ergotherapeute|psychomotricien/.test(p) ? 'reeducation'
+    : p.includes('kinesitherapeute') ? 'reeducation'
     : /aide soignant|auxiliaire/.test(p) ? 'aide'
     : p.includes('ambulancier') ? 'ambulance'
-    : /secretaire|assistant|opticien|prothesiste/.test(p) ? 'accueil'
+    : /secretaire|assistant/.test(p) ? 'accueil'
     : 'infirmier';
   return FAMILLES_QCM.find((f) => f.cle === cle)!;
 }

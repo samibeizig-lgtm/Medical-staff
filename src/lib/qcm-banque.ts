@@ -60,7 +60,7 @@ export const TRONC_COMMUN: FamilleQcm = {
 };
 
 /* ---------- Familles de métiers ---------- */
-export const FAMILLES_QCM: readonly FamilleQcm[] = [
+const FAMILLES_BASE: readonly FamilleQcm[] = [
   {
     cle: 'infirmier',
     label: 'Infirmier(ère)',
@@ -518,4 +518,66 @@ export const FAMILLES_QCM: readonly FamilleQcm[] = [
       },
     ],
   },
+];
+
+/* ---------- Compétences propres aux nouveaux métiers ---------- */
+const SOINS_PEDIATRIQUES: CompetenceQcm = {
+  nom: 'Soins pédiatriques',
+  questions: [
+    ["Chez l'enfant, la dose d'un médicament est généralement calculée :", 'En fonction du poids (mg/kg)', "Uniquement selon l'âge en années", 'Comme chez l\'adulte, divisée par deux', 'Selon la taille seulement'],
+    ["Le paracétamol chez l'enfant se donne habituellement à la dose de :", '15 mg/kg toutes les 6 heures (60 mg/kg/jour au maximum)', '50 mg/kg par prise', '1 g par prise quel que soit l\'âge', '5 mg/kg par jour'],
+    ["Un nourrisson a une diarrhée, la fontanelle déprimée et les yeux creux. Il faut suspecter :", 'Une déshydratation', 'Une constipation', 'Une poussée dentaire', 'Une otite simple'],
+    ["Pour prévenir la mort inattendue du nourrisson, on le couche :", 'Sur le dos, sur un matelas ferme, sans oreiller ni couverture', 'Sur le ventre', 'Sur le côté calé par des coussins', 'Dans le lit des parents avec un oreiller'],
+    ["Un enfant fait une convulsion avec de la fièvre. Que faire en premier ?", "Le protéger des chocs, ne rien mettre dans sa bouche, le placer en position latérale de sécurité après la crise et alerter", 'Lui mettre un objet entre les dents', "Le plonger dans un bain d'eau froide", 'Le maintenir fermement pour arrêter les mouvements'],
+    ["La fréquence cardiaque normale d'un nourrisson au repos est d'environ :", '100 à 160 battements/min', '40 à 60 battements/min', '60 à 80 battements/min', '200 à 240 battements/min'],
+  ],
+};
+const PMA: CompetenceQcm = {
+  nom: 'Laboratoire de PMA',
+  questions: [
+    ["L'ICSI consiste à :", "Injecter un spermatozoïde directement dans le cytoplasme de l'ovocyte", 'Déposer les spermatozoïdes dans l\'utérus', 'Congeler les ovocytes', "Mettre en contact ovocytes et spermatozoïdes dans une boîte sans micro-injection"],
+    ["Les gamètes et les embryons sont cryoconservés dans :", "L'azote liquide, à environ −196 °C", 'Un congélateur à −20 °C', 'Un réfrigérateur à +4 °C', "L'incubateur à 37 °C"],
+    ["Règle essentielle à chaque manipulation de gamètes ou d'embryons au laboratoire de PMA :", "La double vérification de l'identité (second opérateur ou système d'identification)", "La vérification par une seule personne en fin de journée", "L'étiquetage des boîtes après la manipulation", "Le contrôle uniquement lors du transfert"],
+    ["Le stade blastocyste est généralement atteint :", 'Vers le 5e ou 6e jour de développement', 'Au 1er jour', 'Au 2e jour', 'Au 10e jour'],
+    ["Avant un spermogramme, la durée d'abstinence recommandée est généralement de :", '2 à 7 jours', '12 heures', '15 jours au minimum', '1 mois'],
+    ["Les incubateurs de culture embryonnaire sont réglés à :", 'Environ 37 °C, avec une atmosphère contrôlée en CO2', '+4 °C', 'La température ambiante du laboratoire', '42 °C'],
+  ],
+};
+const ENCADREMENT: CompetenceQcm = {
+  nom: 'Encadrement et organisation des soins',
+  questions: [
+    ["Le planning de l'équipe soignante doit avant tout garantir :", 'La continuité et la sécurité des soins 24 h/24, avec un effectif adapté à la charge de travail', 'Le même nombre de gardes pour tous, quelle que soit l\'activité', 'Les préférences de chacun avant les besoins du service', 'Un minimum de personnel la nuit, sans exception'],
+    ["Un nouvel infirmier arrive dans le service. La bonne pratique est :", "Organiser son accueil et son intégration avec un tuteur et des objectifs progressifs", 'Le laisser seul dès le premier jour pour le tester', 'Lui confier uniquement les nuits', 'Attendre qu\'il pose des questions'],
+    ["Deux soignants se disputent devant les patients. Que faites-vous en premier ?", 'Faire cesser la dispute, les recevoir à part, écouter chacun et rechercher une solution', 'Laisser faire, ils finiront par se calmer', 'Sanctionner immédiatement les deux devant l\'équipe', 'Changer l\'un d\'eux de service sans discussion'],
+    ["Un infirmier peut confier un soin à un aide-soignant :", "S'il relève du champ de compétences de l'aide-soignant, sous la responsabilité de l'infirmier", 'Toujours, quel que soit le soin', 'Uniquement la nuit', 'Si le médecin est absent'],
+    ["Les transmissions lors de la relève servent avant tout à :", 'Assurer la continuité des soins en communiquant les informations utiles sur chaque patient', 'Remplir le temps de la relève', 'Évaluer les soignants', 'Remplacer le dossier de soins'],
+  ],
+};
+const QUALITE: CompetenceQcm = {
+  nom: 'Qualité et gestion des risques',
+  questions: [
+    ["Après un événement indésirable grave, l'encadrant doit :", 'Mettre le patient en sécurité, déclarer l\'événement et organiser l\'analyse des causes sans chercher de coupable', 'Rechercher le responsable pour le sanctionner', 'Ne rien déclarer si le patient va bien', 'Attendre une plainte de la famille'],
+    ["Une revue de morbi-mortalité (RMM) a pour but :", "D'analyser collectivement les causes d'un événement pour éviter qu'il se reproduise", 'De sanctionner un soignant', 'De calculer les primes', 'D\'informer la presse'],
+    ["Le chariot d'urgence du service doit être :", 'Vérifié régulièrement (contenu, dates de péremption, défibrillateur), avec une vérification tracée', 'Vérifié uniquement après une utilisation', 'Fermé à clé, clé chez le médecin chef', 'Rangé dans une réserve éloignée'],
+    ["Un audit montre une faible observance de l'hygiène des mains. L'action la plus pertinente est :", "Former l'équipe, rendre la solution hydro-alcoolique accessible partout et refaire un audit", 'Supprimer la solution hydro-alcoolique', 'Ne rien changer', 'Imposer le port permanent de gants'],
+    ["La traçabilité des soins dans le dossier patient permet :", 'De prouver ce qui a été fait, d\'assurer la continuité des soins et de protéger le patient et le soignant', 'Uniquement de facturer', 'De remplacer les transmissions orales urgentes', 'Rien de particulier'],
+  ],
+};
+
+const comp = (nom: string): CompetenceQcm => {
+  const c = FAMILLES_BASE.flatMap((f) => f.competences).find((x) => x.nom === nom);
+  if (!c) throw new Error(`Compétence inconnue : ${nom}`);
+  return c;
+};
+
+/** Familles complètes (les nouvelles combinent des compétences propres et des compétences existantes) */
+export const FAMILLES_QCM: readonly FamilleQcm[] = [
+  ...FAMILLES_BASE,
+  { cle: 'pediatrie', label: 'Pédiatrie', competences: [SOINS_PEDIATRIQUES, comp('Soins néonataux'), comp('Préparation et administration des médicaments')] },
+  { cle: 'pma', label: 'Laboratoire de PMA', competences: [PMA, comp('Phase pré-analytique')] },
+  { cle: 'sterilisation', label: 'Stérilisation', competences: [comp('Asepsie et stérilisation'), comp('Instrumentation chirurgicale')] },
+  { cle: 'panseur', label: 'Panseur(se)', competences: [comp('Pansements et soins des plaies'), comp('Prévention des escarres')] },
+  { cle: 'encadrement', label: 'Encadrement des soins', competences: [ENCADREMENT, QUALITE, comp('Préparation et administration des médicaments'), comp('Surveillance des paramètres vitaux')] },
+  { cle: 'encadrement_bloc', label: 'Encadrement du bloc opératoire', competences: [ENCADREMENT, QUALITE, comp('Bloc opératoire'), comp('Asepsie et stérilisation')] },
+  { cle: 'encadrement_radio', label: "Encadrement de l'imagerie", competences: [ENCADREMENT, QUALITE, comp('Radioprotection'), comp('Scanner et IRM')] },
 ];

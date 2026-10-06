@@ -69,6 +69,11 @@ const PAR_FAMILLE: Record<string, string[]> = {
     "Comment signalez-vous à l'infirmière un changement inquiétant chez un patient ?",
     "Un patient vous confie qu'il se sent seul. Que lui répondez-vous ?",
   ],
+  encadrement: [
+    "Un membre de votre équipe arrive régulièrement en retard. Comment abordez-vous la situation avec lui ?",
+    "Comment annoncez-vous à votre équipe un changement d'organisation qui ne plaît pas à tout le monde ?",
+    "Une famille se plaint de la qualité des soins dans le service. Comment la recevez-vous ?",
+  ],
   accueil: [
     "Un patient attend depuis longtemps et s'énerve à l'accueil. Comment réagissez-vous ?",
     "Comment expliquez-vous à un patient les documents à fournir pour son dossier ?",
@@ -78,11 +83,12 @@ const PAR_FAMILLE: Record<string, string[]> = {
 
 export function familleDuPoste(poste: string | null | undefined): string {
   const p = normalize(poste ?? '');
+  if (p.includes('surveillant')) return 'encadrement';
   if (p.includes('sage femme')) return 'sagefemme';
   if (p.includes('anesthesie')) return 'anesthesie';
   if (p.includes('infirmier')) return 'infirmier';
-  if (/imagerie|laboratoire|biologie|hygiene|instrumentation|opticien|prothesiste|pharmacie/.test(p)) return 'technique';
-  if (/kinesitherapeute|orthophoniste|orthoptiste|ergotherapeute|psychomotricien|dieteticien/.test(p)) return 'reeducation';
+  if (/imagerie|laboratoire|biologie|hygiene|instrumentation|sterilisation|pharmacie/.test(p)) return 'technique';
+  if (/kinesitherapeute|dieteticien/.test(p)) return 'reeducation';
   if (/aide soignant|auxiliaire/.test(p)) return 'aide';
   if (/secretaire|ambulancier|assistant/.test(p)) return 'accueil';
   return 'infirmier';
