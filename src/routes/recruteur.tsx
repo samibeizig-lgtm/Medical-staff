@@ -7,13 +7,14 @@ import { createUser, loginPage, validatePassword } from '../lib/auth';
 import { abonnementActif, candidatFull, candidatsFull, currentRecruteur, dernierEntretienIa, peutVoirCv, scoresCommunication, SQL_EXP_MOIS } from '../lib/models';
 import { CRITERES, CRITERE_KEYS } from '../lib/entretien-ia';
 import { BadgeCommunication, ResultatEntretienIa } from '../views/entretien-ia';
-import { DIPLOMES, GOUVERNORATS, POSTES, TYPES_CONTRAT, TYPES_ETABLISSEMENT, inList } from '../lib/data';
+import { DIPLOMES, DISPONIBILITES, GOUVERNORATS, LANGUES, NIVEAUX_LANGUE, POSTES, TYPES_CONTRAT, TYPES_ETABLISSEMENT, inList } from '../lib/data';
 import { competencesList, esc, formatNombre, intOrNull, isEmail, money, refCandidat, salaireRange } from '../lib/format';
 import { addDays, addYears, dateFr, dateLongue, fmtDateTime, isValidDate, parseLocal, plageHoraire, today, tunis } from '../lib/dates';
 import { sendMail } from '../lib/mail';
 import { CRITERES_MATCHING, matchScore } from '../lib/matching';
-import { distanceKm, gouvernoratsDansRayon, libelleDistance, rayonValide, RAYONS } from '../lib/proximite';
+import { distanceKm, libelleDistance, RAYONS } from '../lib/proximite';
 import { CATALOGUE, NOMS_CATALOGUE, competenceDuCatalogue } from '../lib/qcm';
+import { ACTIVITE, SCORES_COMM, TRIS, clausesRecherche, filtresActifs, lireFiltres } from '../lib/cvtheque';
 
 /** Catalogue groupé par famille : [clé, libellé, compétences] */
 const FAMILLES_CATALOGUE: [string, string, string[]][] = [];
@@ -460,67 +461,89 @@ r.get('/cvtheque', async (c) => {
   const db = c.env.DB;
   const rec = await me(c);
   const abo = await abonnementActif(db, rec.id);
-  const f = {
-    poste: inList(POSTES, q(c, 'poste')) ? q(c, 'poste') : '',
-    annee_diplome: intOrNull(q(c, 'annee_diplome')),
-    experience_min: intOrNull(q(c, 'experience_min')),
-    salaire_max: intOrNull(q(c, 'salaire_max')),
-    ville: inList(GOUVERNORATS, q(c, 'ville')) ? q(c, 'ville') : '',
-    rayon: rayonValide(q(c, 'rayon')),
-    competence: competenceDuCatalogue(q(c, 'competence')) ?? '',
-  };
+  const f = lireFiltres((k) => q(c, k, 100));
   // Distance calculée depuis la ville choisie, sinon depuis celle de l'établissement
   const centre = f.ville || (inList(GOUVERNORATS, rec.ville) ? rec.ville : '');
-  const where = ["c.poste_recherche IS NOT NULL", "c.poste_recherche <> ''"];
-  const params: unknown[] = [];
-  if (f.poste) { where.push('c.poste_recherche = ?'); params.push(f.poste); }
-  if (f.rayon && centre) {
-    const proches = gouvernoratsDansRayon(centre, f.rayon);
-    where.push(`c.ville IN (${proches.map(() => '?').join(',')})`); params.push(...proches);
-  } else if (f.ville) { where.push('c.ville = ?'); params.push(f.ville); }
-  if (f.competence) { where.push('EXISTS (SELECT 1 FROM competences k WHERE k.candidat_id = c.id AND k.nom = ?)'); params.push(f.competence); }
-  if (f.salaire_max) { where.push('(c.salaire_souhaite IS NULL OR c.salaire_souhaite <= ?)'); params.push(f.salaire_max); }
-  if (f.annee_diplome) { where.push("EXISTS (SELECT 1 FROM diplomes d WHERE d.candidat_id = c.id AND CAST(strftime('%Y', d.date_obtention) AS INTEGER) >= ?)"); params.push(f.annee_diplome); }
-  if (f.experience_min) { where.push(`${SQL_EXP_MOIS} >= ?`); params.push(f.experience_min * 12); }
-  const w = where.join(' AND ');
+  const { where: w, params, order, orderParams } = clausesRecherche(f, centre);
   const perPage = 12;
   const total = (await val<number>(db, `SELECT COUNT(*) FROM candidats c WHERE ${w}`, ...params)) ?? 0;
   const pages = Math.max(1, Math.ceil(total / perPage));
   const pg = Math.min(Math.max(1, Number(q(c, 'page')) || 1), pages);
   const rows = await all<Row>(db,
-    `SELECT c.id, c.nom, c.prenom, c.photo, c.poste_recherche, c.ville, c.salaire_souhaite, c.disponibilite, ${SQL_EXP_MOIS} AS exp_mois,
+    `SELECT c.id, c.nom, c.prenom, c.photo, c.poste_recherche, c.ville, c.salaire_souhaite, c.disponibilite, c.updated_at, ${SQL_EXP_MOIS} AS exp_mois,
             (SELECT 1 FROM tests_personnalite t WHERE t.candidat_id = c.id) AS has_test,
-            (SELECT COUNT(*) FROM competences k WHERE k.candidat_id = c.id) AS nb_comp
-     FROM candidats c WHERE ${w} ORDER BY c.updated_at DESC, c.id DESC LIMIT ${perPage} OFFSET ${(pg - 1) * perPage}`, ...params);
+            (SELECT COUNT(*) FROM competences k WHERE k.candidat_id = c.id) AS nb_comp,
+            (SELECT e.score_global FROM entretiens_ia e WHERE e.candidat_id = c.id AND e.statut = 'termine' ORDER BY e.id DESC LIMIT 1) AS comm,
+            (SELECT group_concat(l.langue, ', ') FROM langues l WHERE l.candidat_id = c.id) AS langues
+     FROM candidats c WHERE ${w} ORDER BY ${order} LIMIT ${perPage} OFFSET ${(pg - 1) * perPage}`, ...params, ...orderParams);
   const dips = new Map<number, Row[]>();
-  const comm = await scoresCommunication(db, rows.map((x) => x.id));
   if (rows.length) {
     const ids = rows.map((x) => x.id);
     for (const d of await all<Row>(db, `SELECT candidat_id, intitule, date_obtention FROM diplomes WHERE candidat_id IN (${ids.map(() => '?').join(',')}) ORDER BY date_obtention DESC`, ...ids)) {
       (dips.get(d.candidat_id) ?? dips.set(d.candidat_id, []).get(d.candidat_id)!).push(d);
     }
   }
+  const actifs = filtresActifs(f);
+  const query = cleanQuery({ ...f, tri: f.tri === 'recent' ? '' : f.tri });
+  const sans = (keys: string[]) => '?' + new URLSearchParams(Object.entries(query).filter(([k]) => !keys.includes(k) && k !== 'page')).toString();
+  const avance = !!(f.competence || f.diplome || f.annee_diplome || f.langue || f.salaire_max || f.comm_min || f.test || f.mot || f.actif || f.experience_max !== null);
+  const km = (cd: Row) => distanceKm(centre, cd.ville);
   return page(c, { title: 'CVthèque' }, (
     <div class="container py-4">
-      <h1 class="h3 mb-3"><i class="fa-solid fa-address-book text-primary me-2"></i>CVthèque</h1>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h1 class="h3 mb-0"><i class="fa-solid fa-address-book text-primary me-2"></i>CVthèque</h1>
+        <span class="text-muted small">Recherche multicritère parmi les professionnels de santé inscrits</span>
+      </div>
       {!abo && <div class="alert alert-warning"><i class="fa-solid fa-lock me-1"></i>L'accès au détail des CV est réservé aux abonnés. <a href="/recruteur/abonnement" class="alert-link">Activer mon abonnement</a></div>}
-      <form class="card border-0 shadow-sm mb-4" method="get">
-        <div class="card-body row g-2 align-items-end">
-          <div class="col-md-4"><label class="form-label small">Poste</label><select name="poste" class="form-select"><Options items={POSTES} selected={f.poste} placeholder="Tous" /></select></div>
-          <div class="col-md-4"><label class="form-label small">Compétence validée par QCM</label><select name="competence" class="form-select"><Options items={NOMS_CATALOGUE} selected={f.competence} placeholder="Toutes" /></select></div>
-          <div class="col-md-2"><label class="form-label small">Ville</label><select name="ville" class="form-select"><Options items={GOUVERNORATS} selected={f.ville} placeholder="Toutes" /></select></div>
-          <div class="col-md-2"><label class="form-label small">Distance max.</label><select name="rayon" class="form-select">
-            <option value="">Toute distance</option>
-            {RAYONS.map((x) => <option value={x} selected={f.rayon === x}>{x} km</option>)}
-          </select></div>
-          <div class="col-md-3"><label class="form-label small">Diplôme obtenu en (≥)</label><input type="number" name="annee_diplome" min="1970" max={tunis().getUTCFullYear()} class="form-control" placeholder="ex. 2020" value={f.annee_diplome ?? ''} /></div>
-          <div class="col-md-3"><label class="form-label small">Expérience min. (ans)</label><input type="number" min="0" name="experience_min" class="form-control" value={f.experience_min ?? ''} /></div>
-          <div class="col-md-3"><label class="form-label small">Salaire max. (TND)</label><input type="number" min="0" step="50" name="salaire_max" class="form-control" value={f.salaire_max ?? ''} /></div>
-          <div class="col-md-3 d-grid"><button class="btn btn-primary" title="Rechercher" aria-label="Rechercher"><i class="fa-solid fa-magnifying-glass me-1"></i>Rechercher</button></div>
-          {f.rayon && centre && <div class="col-12 small text-muted">Distance à vol d'oiseau depuis {centre}{f.ville ? '' : ' (votre établissement)'}.</div>}
+      <form class="card border-0 shadow-sm mb-3 recherche-cv" method="get">
+        <div class="card-body">
+          <div class="row g-2 align-items-end">
+            <div class="col-md-6 col-lg-3"><label class="form-label small" for="f-poste">Poste</label><select id="f-poste" name="poste" class="form-select"><Options items={POSTES} selected={f.poste} placeholder="Tous les postes" /></select></div>
+            <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-ville">Ville</label><select id="f-ville" name="ville" class="form-select"><Options items={GOUVERNORATS} selected={f.ville} placeholder="Toutes" /></select></div>
+            <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-rayon">Distance max.</label><select id="f-rayon" name="rayon" class="form-select">
+              <option value="">Toute distance</option>
+              {RAYONS.map((x) => <option value={x} selected={f.rayon === x}>{x} km</option>)}
+            </select></div>
+            <div class="col-6 col-md-4 col-lg-2"><label class="form-label small" for="f-dispo">Disponible au plus tard</label><select id="f-dispo" name="dispo" class="form-select"><Options items={DISPONIBILITES} selected={f.dispo} placeholder="Peu importe" /></select></div>
+            <div class="col-6 col-md-4 col-lg-1"><label class="form-label small" for="f-emin">Exp. min.</label><input id="f-emin" type="number" min="0" max="50" name="experience_min" class="form-control" placeholder="ans" value={f.experience_min ?? ''} /></div>
+            <div class="col-md-4 col-lg-2 d-grid"><button class="btn btn-primary"><i class="fa-solid fa-magnifying-glass me-1"></i>Rechercher</button></div>
+          </div>
+          <details class="mt-3 criteres-avances" open={avance}>
+            <summary><i class="fa-solid fa-sliders me-1"></i>Plus de critères</summary>
+            <div class="row g-2 align-items-end pt-2">
+              <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-emax">Exp. max. (ans)</label><input id="f-emax" type="number" min="0" max="50" name="experience_max" class="form-control" value={f.experience_max ?? ''} /></div>
+              <div class="col-md-6 col-lg-4"><label class="form-label small" for="f-comp">Compétence validée par QCM</label><select id="f-comp" name="competence" class="form-select"><Options items={NOMS_CATALOGUE} selected={f.competence} placeholder="Toutes" /></select></div>
+              <div class="col-md-6 col-lg-4"><label class="form-label small" for="f-dip">Diplôme</label><select id="f-dip" name="diplome" class="form-select"><Options items={DIPLOMES} selected={f.diplome} placeholder="Tous" /></select></div>
+              <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-annee">Diplômé(e) depuis</label><input id="f-annee" type="number" name="annee_diplome" min="1970" max={tunis().getUTCFullYear()} class="form-control" placeholder="ex. 2020" value={f.annee_diplome ?? ''} /></div>
+              <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-langue">Langue</label><select id="f-langue" name="langue" class="form-select"><Options items={LANGUES} selected={f.langue} placeholder="Toutes" /></select></div>
+              <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-niveau">Niveau minimum</label><select id="f-niveau" name="niveau" class="form-select"><Options items={NIVEAUX_LANGUE} selected={f.niveau} placeholder="Tous" /></select></div>
+              <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-sal">Salaire max. (TND)</label><input id="f-sal" type="number" min="0" step="50" name="salaire_max" class="form-control" value={f.salaire_max ?? ''} /></div>
+              <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-comm">Communication (IA)</label><select id="f-comm" name="comm_min" class="form-select">
+                <option value="">Peu importe</option>
+                {SCORES_COMM.map((x) => <option value={x} selected={f.comm_min === x}>{x}/100 et plus</option>)}
+              </select></div>
+              <div class="col-6 col-md-3 col-lg-2"><label class="form-label small" for="f-actif">Profil mis à jour</label><select id="f-actif" name="actif" class="form-select"><Options items={ACTIVITE} selected={f.actif} placeholder="Peu importe" /></select></div>
+              <div class="col-md-6 col-lg-4"><label class="form-label small" for="f-mot">Mot-clé (service, établissement…)</label><input id="f-mot" name="mot" maxlength={60} class="form-control" placeholder="ex. réanimation, bloc, CHU" value={f.mot} /></div>
+              <div class="col-md-6 col-lg-3"><div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="test" value="1" id="f-test" checked={!!f.test} /><label class="form-check-label small" for="f-test">Test de personnalité passé</label></div></div>
+            </div>
+          </details>
+          <input type="hidden" name="tri" value={f.tri === 'recent' ? '' : f.tri} />
+          {(f.rayon || f.tri === 'distance') && centre && <p class="small text-muted mt-2 mb-0">Distances à vol d'oiseau depuis {centre}{f.ville ? '' : ' (votre établissement)'}.</p>}
         </div>
       </form>
-      <p class="text-muted">{total} profil(s)</p>
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <strong>{total} profil(s)</strong>
+        {actifs.map(([label, keys]) => (
+          <a class="badge rounded-pill filtre-actif text-decoration-none" href={sans(keys as string[])} title="Retirer ce critère">{label} <i class="fa-solid fa-xmark ms-1"></i></a>
+        ))}
+        {actifs.length > 1 && <a class="small" href="/recruteur/cvtheque">Tout effacer</a>}
+        <form method="get" class="ms-auto d-flex align-items-center gap-2">
+          {Object.entries(query).filter(([k]) => k !== 'tri' && k !== 'page').map(([k, v]) => <input type="hidden" name={k} value={v} />)}
+          <label class="small text-muted text-nowrap" for="f-tri">Trier par</label>
+          <select id="f-tri" name="tri" class="form-select form-select-sm" data-autosubmit><Options items={TRIS} selected={f.tri} /></select>
+          <noscript><button class="btn btn-sm btn-outline-primary">OK</button></noscript>
+        </form>
+      </div>
       <div class="row g-3">
         {rows.map((cd) => (
           <div class="col-md-6 col-xl-4">
@@ -530,15 +553,16 @@ r.get('/cvtheque', async (c) => {
                   {abo ? <img src={photoUrl(cd.photo)} class="avatar-sm" alt="" /> : <div class="avatar-initials"><i class="fa-solid fa-user"></i></div>}
                   <div><strong>{abo ? `${cd.prenom} ${cd.nom}` : refCandidat(cd.id)}</strong><div class="small text-primary">{cd.poste_recherche}</div></div>
                   <span class="ms-auto d-flex gap-1">
-                    {comm.has(cd.id) && <BadgeCommunication score={comm.get(cd.id)} />}
+                    {cd.comm !== null && <BadgeCommunication score={cd.comm} />}
                     {cd.has_test && <span class="badge bg-info-subtle text-info" title="Test de personnalité passé"><i class="fa-solid fa-brain"></i></span>}
                   </span>
                 </div>
                 <ul class="list-unstyled small mb-2">
                   <li><i class="fa-solid fa-briefcase me-2 text-muted"></i>Expérience : <strong>{Math.round((cd.exp_mois / 12) * 10) / 10} an(s)</strong></li>
+                  <li><i class="fa-solid fa-clock me-2 text-muted"></i>Disponibilité : <strong>{cd.disponibilite || '—'}</strong></li>
+                  <li><i class="fa-solid fa-location-dot me-2 text-muted"></i>{cd.ville || '—'}{centre && km(cd) !== null && <span class="text-muted"> · {km(cd) === 0 ? (f.ville ? 'même gouvernorat' : 'votre gouvernorat') : `≈ ${km(cd)} km${f.ville ? '' : ' de vous'}`}</span>}</li>
                   <li><i class="fa-solid fa-money-bill-wave me-2 text-muted"></i>Salaire souhaité : {money(cd.salaire_souhaite)}</li>
-                  <li><i class="fa-solid fa-clock me-2 text-muted"></i>Disponibilité : {cd.disponibilite || '—'}</li>
-                  <li><i class="fa-solid fa-location-dot me-2 text-muted"></i>{cd.ville || '—'}{centre && distanceKm(centre, cd.ville) !== null && <span class="text-muted"> · {distanceKm(centre, cd.ville) === 0 ? (f.ville ? 'même gouvernorat' : 'votre gouvernorat') : `≈ ${distanceKm(centre, cd.ville)} km${f.ville ? '' : ' de vous'}`}</span>}</li>
+                  {cd.langues && <li><i class="fa-solid fa-language me-2 text-muted"></i>{cd.langues}</li>}
                   <li><i class="fa-solid fa-circle-check me-2 text-success"></i>{cd.nb_comp} compétence(s) validée(s) par QCM</li>
                 </ul>
                 <div class="small">
@@ -560,8 +584,8 @@ r.get('/cvtheque', async (c) => {
           </div>
         ))}
       </div>
-      {!rows.length && <Empty icon="fa-solid fa-user-slash">Aucun profil ne correspond à ces critères.</Empty>}
-      <div class="mt-3"><Pagination page={pg} pages={pages} query={cleanQuery(f)} /></div>
+      {!rows.length && <Empty icon="fa-solid fa-user-slash">Aucun profil ne correspond à ces critères. {actifs.length > 0 && <a href={sans([actifs[actifs.length - 1][1]].flat() as string[])}>Retirer le dernier critère</a>}</Empty>}
+      <div class="mt-3"><Pagination page={pg} pages={pages} query={query} /></div>
     </div>
   ));
 });

@@ -54,9 +54,9 @@ r.get('/', async (c) => {
 
       <section class="container stats-bar">
         <div class="row g-3 text-center">
-          <div class="col-4"><div class="stat"><strong>{stats?.offres ?? 0}</strong><span>offres actives</span></div></div>
-          <div class="col-4"><div class="stat"><strong>{stats?.candidats ?? 0}</strong><span>professionnels inscrits</span></div></div>
-          <div class="col-4"><div class="stat"><strong>{stats?.recruteurs ?? 0}</strong><span>établissements</span></div></div>
+          <div class="col-4"><div class="stat"><strong data-count={stats?.offres ?? 0}>{stats?.offres ?? 0}</strong><span>offres actives</span></div></div>
+          <div class="col-4"><div class="stat"><strong data-count={stats?.candidats ?? 0}>{stats?.candidats ?? 0}</strong><span>professionnels inscrits</span></div></div>
+          <div class="col-4"><div class="stat"><strong data-count={stats?.recruteurs ?? 0}>{stats?.recruteurs ?? 0}</strong><span>établissements</span></div></div>
         </div>
       </section>
 

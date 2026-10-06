@@ -52,3 +52,68 @@
     });
   }
 })();
+
+// Listes qui relancent la recherche dès qu'on change la valeur (tri…)
+document.querySelectorAll('select[data-autosubmit]').forEach((s) => s.addEventListener('change', () => s.form.submit()));
+
+/* ---------- Animations ---------- */
+(function () {
+  'use strict';
+  const reduit = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Ombre du menu au défilement
+  const nav = document.querySelector('.navbar');
+  if (nav) {
+    const maj = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+    window.addEventListener('scroll', maj, { passive: true });
+    maj();
+  }
+
+  // Compteurs animés (data-count)
+  function compter(el) {
+    const fin = Number(el.dataset.count) || 0;
+    if (reduit || fin === 0) { el.textContent = fin.toLocaleString('fr-FR'); return; }
+    const t0 = performance.now(), duree = 1200;
+    const pas = (t) => {
+      const p = Math.min(1, (t - t0) / duree), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(fin * e).toLocaleString('fr-FR');
+      if (p < 1) requestAnimationFrame(pas);
+    };
+    requestAnimationFrame(pas);
+  }
+
+  if (reduit || !('IntersectionObserver' in window)) {
+    document.querySelectorAll('[data-count]').forEach(compter);
+    return;
+  }
+
+  // Apparition progressive des cartes, titres et articles au défilement
+  const cibles = document.querySelectorAll(
+    'main .section-title, main .card:not(form):not(.no-reveal), main .stat, main .kpi, main .cta-box, main .ai-header, main .empty-state'
+  );
+  const vus = new WeakSet();
+  const obs = new IntersectionObserver((entrees) => {
+    entrees.forEach((en) => {
+      if (!en.isIntersecting) return;
+      const el = en.target;
+      obs.unobserve(el);
+      el.classList.add('visible');
+      el.querySelectorAll('[data-count]').forEach(compter);
+      // Une fois apparu, l'élément retrouve ses transitions normales (survol)
+      setTimeout(() => { el.classList.remove('reveal', 'visible'); el.style.removeProperty('--d'); }, 700 + (parseInt(el.style.getPropertyValue('--d')) || 0));
+    });
+  }, { rootMargin: '0px 0px -40px 0px', threshold: 0.08 });
+  cibles.forEach((el) => {
+    if (vus.has(el) || el.closest('.reveal') || el.closest('#qcm-form, #ia-app, .modal, .chatbot')) return;
+    vus.add(el);
+    // Décalage en cascade entre éléments voisins (même ligne de grille)
+    const parent = el.closest('.row');
+    const freres = parent ? [...parent.children] : [];
+    const i = Math.max(0, freres.findIndex((f) => f.contains(el)));
+    el.style.setProperty('--d', Math.min(i, 5) * 90 + 'ms');
+    el.classList.add('reveal');
+    obs.observe(el);
+  });
+  // Compteurs hors des cartes animées
+  document.querySelectorAll('[data-count]').forEach((el) => { if (!el.closest('.reveal')) compter(el); });
+})();

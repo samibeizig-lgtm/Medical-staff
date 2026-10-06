@@ -141,7 +141,15 @@ La proximité se calcule à vol d'oiseau entre les chefs-lieux des gouvernorats 
 
 ## 🤖 Chatbot Dr. Jobs
 
-Le moteur local répond instantanément aux questions courantes (CV, salaires, diplômes, entretiens, abonnement…). Une fois Workers AI activé, les questions complexes sont transmises à un modèle Llama. L'historique de conversation est limité aux 10 derniers messages.
+Dr. Jobs comprend la question (mots entiers, métier et ville détectés, y compris « kiné », « labo », « Djerba »…) et répond **à partir des données réelles du site** :
+
+- **offres** : « offres de sage-femme à Sousse », « offres près de chez moi » (candidat connecté, 50 km autour de sa ville) ; s'il n'y en a pas, les villes les plus proches qui en ont ;
+- **salaires** réellement publiés dans les offres actives pour un métier (et une ville), avec un ordre de grandeur indicatif ;
+- **profils** pour les établissements : « je cherche une sage-femme disponible immédiatement à Sousse » → nombre de profils et lien vers la CVthèque déjà filtrée ;
+- **état du compte** : « mon profil est-il complet ? » (candidat : CV, test, QCM, entretien IA) ou « mon abonnement » (établissement : échéance, offres, nouvelles candidatures) ;
+- **fonctionnement du site** : postuler, QCM, entretien IA, test, abonnement, CVthèque, matching, confidentialité, mot de passe…
+
+Les relances courtes (« et à Sfax ? », « et pour une sage-femme ? ») reprennent le sujet précédent. Chaque réponse propose des liens directs et des suggestions cliquables. Les questions hors base sont transmises à Workers AI (si activé) avec la base de connaissances du site et la consigne de ne rien inventer ; sinon, Dr. Jobs demande de reformuler.
 
 ---
 
@@ -203,7 +211,8 @@ php/                     Version d'origine PHP / MySQL
 - **Visiteur** : accueil, mission, offres filtrables (poste, gouvernorat, contrat), demandes d'emploi anonymisées.
 - **Entretien IA** : voir plus haut.
 - **Candidat** : CV structuré (photo redimensionnée dans le navigateur, 24 gouvernorats, diplômes, expériences, compétences validées par QCM chronométré, langues, prétentions, confidentialité des coordonnées) ; test de personnalité de 30 questions (Big Five + adaptation au milieu médical, jauges, portrait) ; bouton « Postuler » verrouillé tant que le CV et le test ne sont pas complétés ; emails de confirmation ; validation ou refus des entretiens.
-- **Établissement** : abonnement annuel de 1 000 TND (paiement simulé) ; gestion des offres ; CVthèque multicritères (dont distance maximale et compétence validée) ; candidatures ; CV détaillé (consultations enregistrées) ; **CV en PDF** (page imprimable avec photo → « Enregistrer en PDF » du navigateur) ; **suggestions IA 🧠** (compétences validées 45 %, diplôme 20 %, expérience 20 %, proximité 15 %, bonus personnalité + communication jusqu'à 10 %) ; calendrier d'entretiens FullCalendar (créneaux de 30 min, 8h–18h, chevauchements refusés).
+- **Établissement** : abonnement annuel de 1 000 TND (paiement simulé) ; gestion des offres ; **CVthèque multicritère** (poste, ville et distance maximale, disponibilité, expérience min./max., compétence validée par QCM, diplôme et année, langue et niveau, salaire maximum, score de communication, test passé, mot-clé dans les expériences, profils actifs récemment ; tri par expérience, proximité, communication, compétences ou salaire ; critères actifs retirables en un clic) ; candidatures ; CV détaillé (consultations enregistrées) ; **CV en PDF** (page imprimable avec photo → « Enregistrer en PDF » du navigateur) ; **suggestions IA 🧠** (compétences validées 45 %, diplôme 20 %, expérience 20 %, proximité 15 %, bonus personnalité + communication jusqu'à 10 %) ; calendrier d'entretiens FullCalendar (créneaux de 30 min, 8h–18h, chevauchements refusés).
+- **Animations** : soulignement tricolore et menus déroulants animés, ombre du menu au défilement, apparition progressive des cartes et articles, compteurs animés, survols ; tout est désactivé si le système demande de réduire les animations.
 - **Administrateur** : statistiques, gestion des utilisateurs (suspension avec déconnexion immédiate, réactivation, suppression), modération des offres, activation manuelle et annulation d'abonnements, journal des emails et des actions.
 - **Mot de passe oublié** : lien à usage unique valable 1 heure, 3 demandes maximum par heure, sans révéler si l'adresse existe ; toutes les sessions sont fermées après le changement.
 

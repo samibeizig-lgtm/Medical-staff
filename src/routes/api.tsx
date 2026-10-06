@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import type { AppEnv } from '../types';
 import { NOMS_CATALOGUE } from '../lib/qcm';
-import { normalize } from '../lib/format';
-import { chatbotLocal, chatbotRemote, FALLBACK, type ChatMsg } from '../lib/chatbot';
+import { formatNombre, normalize } from '../lib/format';
+import { chatbotRemote, FALLBACK, repondre, type ChatMsg, type Contexte, type Reponse } from '../lib/chatbot';
 
 const r = new Hono<AppEnv>();
 
@@ -22,7 +22,7 @@ r.get('/api/competences', async (c) => {
 });
 
 /* ---------- Chatbot Dr. Jobs ---------- */
-// Historique conservé dans un cookie (10 derniers messages, tronqués)
+// Historique conservé dans un cookie (10 derniers messages, tronqués), avec le sujet des réponses pour les relances
 const HIST_COOKIE = 'ms_chat';
 const readHistory = (c: any): ChatMsg[] => {
   try {
@@ -33,7 +33,7 @@ const readHistory = (c: any): ChatMsg[] => {
   } catch { return []; }
 };
 const writeHistory = (c: any, h: ChatMsg[]) => {
-  let hist = h.slice(-10).map((m) => ({ role: m.role, content: m.content.slice(0, 400) }));
+  let hist = h.slice(-10).map((m) => ({ role: m.role, content: m.content.slice(0, 400), ...(m.s ? { s: m.s } : {}), ...(m.e ? { e: m.e } : {}) }));
   let enc = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(hist))));
   while (enc.length > 3800 && hist.length > 2) { // limite de taille d'un cookie
     hist = hist.slice(2);
@@ -42,23 +42,25 @@ const writeHistory = (c: any, h: ChatMsg[]) => {
   setCookie(c, HIST_COOKIE, enc, { path: '/api/chatbot', httpOnly: true, sameSite: 'Lax', secure: new URL(c.req.url).protocol === 'https:' });
 };
 
-r.get('/api/chatbot', (c) => c.json({ history: readHistory(c) }));
+r.get('/api/chatbot', (c) => c.json({ history: readHistory(c).map((m) => ({ role: m.role, content: m.content })) }));
 
 r.post('/api/chatbot', async (c) => {
   let body: any = {};
   try { body = await c.req.json(); } catch { /* corps invalide */ }
   const message = String(body?.message ?? '').trim().slice(0, 500);
   if (!message) return c.json({ error: 'Message vide.' }, 422);
-  const prix = c.env.ABONNEMENT_PRIX;
   const history = readHistory(c);
+  const x: Contexte = { db: c.env.DB, env: c.env, user: c.get('user'), prix: formatNombre(Number(c.env.ABONNEMENT_PRIX)), history };
+  let rep: Reponse | null = null;
+  try { rep = await repondre(x, message); } catch (e) { console.error('chatbot', e); }
+  if (!rep) {
+    const ia = await chatbotRemote(x, [...history, { role: 'user' as const, content: message }].slice(-8));
+    rep = ia ? { reply: ia, suggestions: FALLBACK.suggestions?.slice(0, 2) } : FALLBACK;
+  }
   history.push({ role: 'user', content: message });
-  const complex = message.length > 90 || (message.match(/\?/g) ?? []).length > 1;
-  let reply = complex ? null : chatbotLocal(message, prix);
-  if (!reply) reply = await chatbotRemote(c.env, history.slice(-10));
-  if (!reply) reply = chatbotLocal(message, prix) ?? FALLBACK;
-  history.push({ role: 'assistant', content: reply });
+  history.push({ role: 'assistant', content: rep.reply, s: rep.sujet, e: rep.entites ? { metier: rep.entites.metier, postes: rep.entites.postes, ville: rep.entites.ville, dispo: rep.entites.dispo } : undefined });
   writeHistory(c, history);
-  return c.json({ reply });
+  return c.json({ reply: rep.reply, liens: rep.liens ?? [], suggestions: rep.suggestions ?? [] });
 });
 
 export default r;
