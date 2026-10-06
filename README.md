@@ -115,6 +115,8 @@ Depuis son espace, le candidat passe un entretien de **5 questions orales** de m
 
 Le workflow de déploiement active Workers AI automatiquement. Si le jeton n'a pas la permission `Workers AI → Read`, il redéploie sans IA et affiche un avertissement. Coût indicatif : environ 300 à 500 « neurones » par entretien, soit une vingtaine d'entretiens par jour dans le quota gratuit (10 000 neurones par jour).
 
+**Lecture vocale** : chaque question est lue à voix haute par une voix féminine française (synthèse vocale du navigateur : Denise sur Edge, « Google français » sur Chrome, Audrey/Amélie sur Mac et iPhone…). L'enregistrement démarre à la fin de la lecture, pour que la voix ne soit pas captée par le micro. Le candidat peut couper la lecture (« Répondre maintenant ») ou la désactiver.
+
 ## ✅ Compétences validées par QCM
 
 Les candidats ne déclarent plus leurs compétences : ils les **obtiennent en réussissant des QCM chronométrés** propres à leur métier (menu « QCM compétences »). Seules les compétences validées figurent sur le CV et comptent dans le matching.

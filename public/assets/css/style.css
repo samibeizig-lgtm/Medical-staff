@@ -364,3 +364,11 @@ main > .container > .alert, main .alert-dismissible { animation: ms-slide-down .
 .chatbot-liens { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 10px; }
 .chatbot-liens .btn { font-size: .78rem; }
 .chatbot-messages .msg.typing { padding: 11px 14px; width: fit-content; }
+
+/* Entretien IA : la recruteuse lit la question */
+.ia-recruteuse { position: relative; margin-right: 14px; width: 64px; height: 64px; border-radius: 50%; background: var(--ms-bleu-pale); color: var(--ms-bleu); display: flex; align-items: center; justify-content: center; font-size: 1.7rem; flex-shrink: 0; }
+.ia-ondes { position: absolute; right: -18px; top: 50%; transform: translateY(-50%); display: flex; gap: 3px; align-items: center; }
+.ia-ondes span { width: 4px; height: 10px; border-radius: 2px; background: var(--ms-turquoise); animation: ia-onde .9s ease-in-out infinite; }
+.ia-ondes span:nth-child(2) { animation-delay: .15s; }
+.ia-ondes span:nth-child(3) { animation-delay: .3s; }
+@keyframes ia-onde { 0%, 100% { height: 6px; } 50% { height: 20px; } }

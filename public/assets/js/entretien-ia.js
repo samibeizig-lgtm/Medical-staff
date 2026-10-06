@@ -39,11 +39,53 @@
   const decompte = Number(app.dataset.decompte) || 3;
   const csrf = app.dataset.csrf;
   const $ = (s) => app.querySelector(s);
-  const steps = ['pret', 'decompte', 'enregistrement', 'envoi', 'resultat'];
+  const steps = ['pret', 'decompte', 'lecture', 'enregistrement', 'envoi', 'resultat'];
   const show = (name) => steps.forEach((s) => { $('[data-step="' + s + '"]').hidden = s !== name; });
   const erreur = (msg) => { const e = $('[data-erreur]'); e.textContent = msg || ''; e.hidden = !msg; };
 
   let rec = null, chunks = [], stream = null, recog = null, transcriptNav = '', t0 = 0, timer = null, envoiFd = null, enCours = false;
+
+  /* ---------- Lecture de la question à voix haute (voix féminine du navigateur) ---------- */
+  const tts = window.speechSynthesis;
+  const caseVoix = $('[data-voix]');
+  try { if (localStorage.getItem('ms_ia_voix') === '0') caseVoix.checked = false; } catch (e) { /* stockage indisponible */ }
+  if (!tts) { caseVoix.checked = false; caseVoix.disabled = true; caseVoix.closest('.form-check').title = 'Lecture vocale non disponible sur ce navigateur'; }
+  caseVoix.addEventListener('change', () => { try { localStorage.setItem('ms_ia_voix', caseVoix.checked ? '1' : '0'); } catch (e) { /* */ } });
+
+  const FEMININES = /denise|julie|hortense|eloise|vivienne|brigitte|coralie|jacqueline|yvette|am[eé]lie|audrey|aur[eé]lie|marie|virginie|c[eé]line|l[eé]a\b|chantal|sylvie|charlotte|female|femme|google fran[cç]ais/i;
+  const MASCULINES = /thomas|paul|henri|claude|jean|nicolas|daniel|r[eé]my|antoine|j[eé]r[oô]me|mathieu|fabrice|guillaume|alain|gerard|male\b|homme/i;
+  function voixFeminine() {
+    const fr = (tts ? tts.getVoices() : []).filter((v) => /^fr/i.test(v.lang));
+    const note = (v) => (FEMININES.test(v.name) ? 10 : 0) - (MASCULINES.test(v.name) ? 20 : 0)
+      + (/natural|online|neural|premium|enhanced/i.test(v.name) ? 3 : 0) + (/fr[-_]FR/i.test(v.lang) ? 1 : 0);
+    return fr.sort((a, b) => note(b) - note(a))[0] || null;
+  }
+  if (tts) { tts.getVoices(); tts.addEventListener && tts.addEventListener('voiceschanged', () => tts.getVoices()); }
+
+  /** Lit le texte ; la promesse se résout à la fin de la lecture (ou au clic sur « Répondre maintenant ») */
+  let finLecture = null;
+  function lire(texte) {
+    return new Promise((resolve) => {
+      let fini = false;
+      const terminer = () => { if (fini) return; fini = true; clearTimeout(garde); try { tts.cancel(); } catch (e) { /* */ } finLecture = null; resolve(); };
+      finLecture = terminer;
+      // Sécurité : certains navigateurs n'émettent jamais la fin de lecture
+      const garde = setTimeout(terminer, Math.min(30000, 2500 + texte.length * 90));
+      try {
+        const u = new SpeechSynthesisUtterance(texte);
+        const v = voixFeminine();
+        if (v) { try { u.voice = v; } catch (e) { /* voix inutilisable : voix par défaut */ } }
+        u.lang = (v && v.lang) || 'fr-FR';
+        u.rate = 0.95;
+        // Voix féminine introuvable : on adoucit la voix française par défaut
+        u.pitch = v && FEMININES.test(v.name) ? 1 : 1.15;
+        u.onend = () => setTimeout(terminer, 300);
+        u.onerror = terminer;
+        tts.cancel();
+        tts.speak(u);
+      } catch (e) { terminer(); }
+    });
+  }
 
   function bloquerSortie(e) { if (enCours) { e.preventDefault(); e.returnValue = ''; } }
   window.addEventListener('beforeunload', bloquerSortie);
@@ -63,6 +105,9 @@
     } catch (e) {
       return erreur('Accès au micro refusé. Autorisez le micro dans votre navigateur puis cliquez à nouveau.');
     }
+    // Débloque la synthèse vocale pendant le clic (exigence de certains navigateurs)
+    const avecVoix = !!(tts && caseVoix.checked);
+    if (avecVoix) { try { tts.cancel(); tts.speak(new SpeechSynthesisUtterance('')); } catch (e) { /* */ } }
     show('decompte');
     for (let n = decompte; n > 0; n--) {
       $('[data-decompte-val]').textContent = n;
@@ -77,8 +122,14 @@
       show('pret');
       return erreur(d.error || 'Impossible d\'afficher la question. Réessayez.');
     }
-    demarrerEnregistrement();
     $('[data-question]').textContent = d.question;
+    if (avecVoix) {
+      // La question est lue AVANT l'enregistrement : la voix de synthèse n'est pas captée par le micro
+      $('[data-question-lecture]').textContent = d.question;
+      show('lecture');
+      await lire(d.question);
+    }
+    demarrerEnregistrement();
     show('enregistrement');
   }
 
@@ -169,6 +220,7 @@
     const act = a.dataset.action;
     if (act === 'pret') { a.disabled = true; pret().finally(() => { a.disabled = false; }); }
     else if (act === 'stop') stop();
+    else if (act === 'repondre') { if (finLecture) finLecture(); }
     else if (act === 'renvoyer') envoyer();
     else if (act === 'suivant') location.reload();
   });

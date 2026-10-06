@@ -88,18 +88,31 @@ r.get('/', async (c) => {
           data-max={DUREE_MAX_SECONDES} data-decompte={DECOMPTE_SECONDES} data-csrf={csrf}>
           <div class="card-body p-4">
             <div data-step="pret">
-              <p class="mb-2">Quand vous cliquerez sur <strong>« Afficher la question »</strong>, un décompte de {DECOMPTE_SECONDES} secondes démarre, puis <strong>la question s'affiche et l'enregistrement commence aussitôt</strong> : comme lors d'un vrai entretien, il n'y a pas de temps de préparation.</p>
+              <p class="mb-2">Quand vous cliquerez sur <strong>« Afficher la question »</strong>, un décompte de {DECOMPTE_SECONDES} secondes démarre, puis <strong>la recruteuse vous pose la question à voix haute</strong> et l'enregistrement commence dès la fin de la lecture : comme lors d'un vrai entretien, il n'y a pas de temps de préparation.</p>
               <ul class="small text-muted mb-3">
                 <li>Répondez à voix haute, naturellement ({DUREE_MAX_SECONDES / 60} minutes maximum).</li>
                 <li>Cliquez sur « Terminer ma réponse » quand vous avez fini.</li>
                 <li><strong>Ne rechargez pas et ne quittez pas la page</strong> pendant une question : elle serait comptée sans réponse.</li>
               </ul>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="ia-voix" data-voix checked />
+                <label class="form-check-label small" for="ia-voix"><i class="fa-solid fa-volume-high me-1 text-primary"></i>Lire la question à voix haute (voix féminine) – montez le son ou utilisez des écouteurs</label>
+              </div>
               <button type="button" class="btn btn-primary btn-lg" data-action="pret"><i class="fa-solid fa-play me-2"></i>Afficher la question {i + 1}</button>
             </div>
 
             <div data-step="decompte" hidden class="text-center py-4">
               <p class="text-muted mb-1">La question s'affiche dans</p>
               <div class="ia-countdown" data-decompte-val aria-live="assertive">{DECOMPTE_SECONDES}</div>
+            </div>
+
+            <div data-step="lecture" hidden>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="ia-recruteuse" aria-hidden="true"><i class="fa-solid fa-user-tie"></i><span class="ia-ondes"><span></span><span></span><span></span></span></div>
+                <div><strong>La recruteuse vous pose la question…</strong><br /><small class="text-muted">L'enregistrement de votre réponse démarre à la fin de la lecture.</small></div>
+              </div>
+              <p class="fs-5 fw-medium ia-question" data-question-lecture></p>
+              <button type="button" class="btn btn-outline-primary btn-sm" data-action="repondre"><i class="fa-solid fa-microphone me-1"></i>Répondre maintenant</button>
             </div>
 
             <div data-step="enregistrement" hidden>
@@ -144,7 +157,7 @@ r.get('/', async (c) => {
         <h2 class="h5">{dernier ? "Repasser l'entretien" : 'Comment ça marche ?'}</h2>
         <ul class="small">
           <li><strong>{NB_QUESTIONS} questions</strong> de mise en situation, adaptées à votre métier ({m.poste_recherche || 'poste non renseigné'}).</li>
-          <li><strong>Comme lors d'un vrai entretien, il n'y a pas de temps de préparation</strong> : chaque question s'affiche au moment où l'enregistrement démarre, et vous ne la découvrez qu'à ce moment-là.</li>
+          <li><strong>Comme lors d'un vrai entretien, il n'y a pas de temps de préparation</strong> : vous découvrez chaque question au dernier moment. Une <strong>voix féminine vous la lit</strong> (désactivable), puis l'enregistrement de votre réponse démarre aussitôt.</li>
           <li>Vous répondez <strong>uniquement à l'oral</strong>, au micro ({DUREE_MAX_SECONDES / 60} minutes maximum par question). Votre réponse est transcrite automatiquement.</li>
           <li>L'IA évalue votre <strong>communication</strong> : clarté, structure, empathie, vocabulaire professionnel et adaptation à l'interlocuteur.</li>
           <li>Prévoyez environ 15 minutes au calme, avec un micro (celui du téléphone ou de l'ordinateur suffit).</li>
