@@ -13,6 +13,7 @@ import { dateFr, isValidDate, plageHoraire, parseLocal, tunis } from '../lib/dat
 import { sendMail } from '../lib/mail';
 import { ECHELLE, QUESTIONS, personalityPortrait, personalityScores } from '../lib/personality';
 import { cleanQuery, searchOffres } from '../lib/offres';
+import { distanceKm, gouvernoratsDansRayon, rayonValide, RAYONS } from '../lib/proximite';
 import { randomHex } from '../lib/crypto';
 import { page } from '../views/layout';
 import { AuthCard, Csrf, CvSections, Empty, Errors, Jauges, Kpi, Langues, OffreCard, Options, Pagination, StatutEntretien, photoUrl } from '../views/ui';
@@ -116,6 +117,7 @@ r.get('/dashboard', async (c) => {
         <div class="d-flex flex-wrap gap-2">
           <a href="/candidat/cv" class="btn btn-primary"><i class="fa-solid fa-file-pen me-1"></i>Modifier mon CV</a>
           <a href="/candidat/test" class="btn btn-outline-primary"><i class="fa-solid fa-brain me-1"></i>Test de personnalité</a>
+          <a href="/candidat/qcm" class="btn btn-outline-primary"><i class="fa-solid fa-list-check me-1"></i>QCM compétences</a>
           <a href="/candidat/entretien-ia" class="btn btn-outline-primary"><i class="fa-solid fa-microphone-lines me-1"></i>Entretien IA</a>
           <a href="/candidat/offres" class="btn btn-outline-primary"><i class="fa-solid fa-magnifying-glass me-1"></i>Voir les offres</a>
           <a href="/candidat/entretiens" class="btn btn-outline-primary position-relative"><i class="fa-solid fa-calendar-check me-1"></i>Mes entretiens
@@ -159,6 +161,12 @@ r.get('/dashboard', async (c) => {
               <Jauges test={ct.test} compact />
             </div></div>
           )}
+          <div class="card border-0 shadow-sm mt-4"><div class="card-body">
+            <h3 class="h6"><i class="fa-solid fa-list-check text-primary me-1"></i>Compétences validées par QCM</h3>
+            <p class="mb-2"><strong class="fs-4">{ct.competences.length}</strong> <span class="small text-muted">compétence(s) validée(s)</span></p>
+            <p class="small text-muted mb-2">15 questions chronométrées (30 s chacune) sur votre métier : seules les compétences validées comptent dans le matching.</p>
+            <a href="/candidat/qcm" class={`btn btn-sm ${ct.competences.length ? 'btn-outline-primary' : 'btn-primary'}`}><i class="fa-solid fa-stopwatch me-1"></i>{ct.competences.length ? 'Valider d\'autres compétences' : 'Passer mon premier QCM'}</a>
+          </div></div>
           <div class="card border-0 shadow-sm mt-4"><div class="card-body">
             <h3 class="h6"><i class="fa-solid fa-microphone-lines text-primary me-1"></i>Entretien IA – communication</h3>
             {eia ? (
@@ -254,7 +262,6 @@ r.on(['GET', 'POST'], '/cv', async (c) => {
           v.adresse || null, v.ville || null, v.pays, v.poste || null, v.salaire, v.dispo || null, v.visibles, cid),
         stmt(db, 'DELETE FROM diplomes WHERE candidat_id = ?', cid),
         stmt(db, 'DELETE FROM experiences WHERE candidat_id = ?', cid),
-        stmt(db, 'DELETE FROM competences WHERE candidat_id = ?', cid),
         stmt(db, 'DELETE FROM langues WHERE candidat_id = ?', cid),
       ];
       for (const d of (await indexed(c, 'diplomes')).slice(0, 20)) {
@@ -270,8 +277,6 @@ r.on(['GET', 'POST'], '/cv', async (c) => {
           cid, x.poste.slice(0, 150), (x.etablissement ?? '').slice(0, 190) || null, isValidDate(x.date_debut) ? x.date_debut : null,
           actuel ? null : isValidDate(x.date_fin) ? x.date_fin : null, actuel, (x.description ?? '').slice(0, 2000) || null));
       }
-      const comps = [...new Set((await field(c, 'competences', 5000)).split(',').map((k) => k.trim()).filter(Boolean))].slice(0, 40);
-      for (const k of comps) s.push(stmt(db, 'INSERT INTO competences (candidat_id, nom) VALUES (?, ?)', cid, k.slice(0, 120)));
       const seen = new Set<string>();
       for (const l of await indexed(c, 'langues')) {
         if (!inList(LANGUES, l.langue) || seen.has(l.langue)) continue;
@@ -295,7 +300,7 @@ r.on(['GET', 'POST'], '/cv', async (c) => {
     for (const k of ['nom', 'prenom', 'date_naissance', 'lieu_naissance', 'telephone', 'adresse', 'ville', 'pays', 'poste_recherche', 'salaire_souhaite', 'disponibilite']) ct[k] = await field(c, k);
   }
   const langues = ct.langues.length ? ct.langues : [{ langue: 'Arabe', niveau: 'Langue maternelle' }, { langue: 'Français', niveau: 'Courant' }];
-  return page(c, { title: 'Mon CV', scripts: <script src="/assets/js/tags.js"></script> }, (
+  return page(c, { title: 'Mon CV' }, (
     <div class="container py-4">
       <h1 class="h3 mb-1">Mon CV</h1>
       <p class="text-muted">Un CV complet (poste recherché + au moins un diplôme) est nécessaire pour postuler.</p>
@@ -362,10 +367,12 @@ r.on(['GET', 'POST'], '/cv', async (c) => {
         <div class="row g-4 mb-4">
           <div class="col-lg-7"><div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
             <h2 class="h5 section-label"><i class="fa-solid fa-star"></i>Compétences</h2>
-            <div class="tag-input" data-name="competences" data-source="/api/competences">
-              <input type="hidden" name="competences" value={ct.competences.map((k) => k.nom).join(', ')} />
+            <p class="small text-muted">Les compétences ne se déclarent pas : elles s'obtiennent en réussissant des <strong>QCM chronométrés</strong> propres à votre métier. Seules les compétences validées figurent sur votre CV et comptent pour 45 % du matching.</p>
+            <div class="mb-3">
+              {ct.competences.map((k) => <span class="badge rounded-pill bg-success-subtle text-success me-1 mb-1"><i class="fa-solid fa-circle-check me-1"></i>{k.nom}</span>)}
+              {!ct.competences.length && <span class="small text-muted">Aucune compétence validée pour l'instant.</span>}
             </div>
-            <div class="form-text">Tapez une compétence puis Entrée. Des suggestions paramédicales s'affichent automatiquement.</div>
+            <a href="/candidat/qcm" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-list-check me-1"></i>Valider des compétences par QCM</a>
           </div></div></div>
           <div class="col-lg-5"><div class="card border-0 shadow-sm h-100"><div class="card-body p-4">
             <h2 class="h5 section-label"><i class="fa-solid fa-language"></i>Langues</h2>
@@ -537,12 +544,18 @@ r.on(['GET', 'POST'], '/offres', async (c) => {
     ville: inList(GOUVERNORATS, q(c, 'ville')) ? q(c, 'ville') : '',
     contrat: inList(TYPES_CONTRAT, q(c, 'contrat')) ? q(c, 'contrat') : '',
     salaire_min: intOrNull(q(c, 'salaire_min')),
+    rayon: rayonValide(q(c, 'rayon')),
   };
-  const [res, dejaRows] = await Promise.all([
-    searchOffres(db, f, Number(q(c, 'page')) || 1),
+  // Le rayon se mesure depuis la ville choisie, sinon depuis celle du candidat
+  const centre = f.ville || (inList(GOUVERNORATS, m.ville) ? m.ville as string : '');
+  const villes = f.rayon && centre ? gouvernoratsDansRayon(centre, f.rayon) : undefined;
+  const [res, dejaRows, comps] = await Promise.all([
+    searchOffres(db, { ...f, villes }, Number(q(c, 'page')) || 1),
     all<Row>(db, 'SELECT offre_id FROM candidatures WHERE candidat_id = ?', m.id),
+    all<Row>(db, 'SELECT nom FROM competences WHERE candidat_id = ?', m.id),
   ]);
   const deja = new Set(dejaRows.map((d) => d.offre_id));
+  const validees = new Set(comps.map((x) => String(x.nom)));
   const csrf = c.get('csrf');
   return page(c, { title: 'Rechercher des offres', active: 'offres' }, (
     <div class="container py-4">
@@ -556,17 +569,23 @@ r.on(['GET', 'POST'], '/offres', async (c) => {
       )}
       <form class="card border-0 shadow-sm mb-4" method="get">
         <div class="card-body row g-2 align-items-end">
-          <div class="col-md-4"><label class="form-label small">Poste</label><select name="poste" class="form-select"><Options items={POSTES} selected={f.poste} placeholder="Tous les postes" /></select></div>
+          <div class="col-md-3"><label class="form-label small">Poste</label><select name="poste" class="form-select"><Options items={POSTES} selected={f.poste} placeholder="Tous les postes" /></select></div>
           <div class="col-md-2"><label class="form-label small">Ville</label><select name="ville" class="form-select"><Options items={GOUVERNORATS} selected={f.ville} placeholder="Toutes" /></select></div>
+          <div class="col-md-2"><label class="form-label small">Distance max.</label><select name="rayon" class="form-select">
+            <option value="">Toute distance</option>
+            {RAYONS.map((x) => <option value={x} selected={f.rayon === x}>{x} km</option>)}
+          </select></div>
           <div class="col-md-2"><label class="form-label small">Contrat</label><select name="contrat" class="form-select"><Options items={TYPES_CONTRAT} selected={f.contrat} placeholder="Tous" /></select></div>
           <div class="col-md-2"><label class="form-label small">Salaire min. (TND)</label><input type="number" min="0" step="50" name="salaire_min" class="form-control" value={f.salaire_min ?? ''} /></div>
-          <div class="col-md-2 d-grid"><button class="btn btn-primary"><i class="fa-solid fa-filter me-1"></i>Filtrer</button></div>
+          <div class="col-md-1 d-grid"><button class="btn btn-primary" title="Filtrer" aria-label="Filtrer"><i class="fa-solid fa-filter"></i></button></div>
+          {f.rayon && !centre && <div class="col-12 small text-warning">Choisissez une ville ou indiquez la vôtre dans votre CV pour filtrer par distance.</div>}
+          {f.rayon && centre && <div class="col-12 small text-muted">Distance à vol d'oiseau depuis {centre}{f.ville ? '' : ' (votre ville)'}.</div>}
         </div>
       </form>
       <p class="text-muted">{res.total} offre(s) trouvée(s)</p>
       {!res.rows.length && <Empty icon="fa-regular fa-folder-open">Aucune offre ne correspond à vos critères. <a href="?poste=">Voir toutes les offres</a></Empty>}
       {res.rows.map((o) => (
-        <OffreCard o={o} actions={
+        <OffreCard o={o} validees={validees} info={m.ville && distanceKm(m.ville, o.ville) !== null ? <span class="ms-1 small">({distanceKm(m.ville, o.ville) === 0 ? 'dans votre gouvernorat' : `≈ ${distanceKm(m.ville, o.ville)} km de chez vous`})</span> : undefined} actions={
           deja.has(o.id) ? <span class="btn btn-success disabled"><i class="fa-solid fa-check me-1"></i>Candidature envoyée</span>
           : !cvOk || !testOk ? (
             <>

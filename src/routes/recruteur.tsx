@@ -11,7 +11,16 @@ import { DIPLOMES, GOUVERNORATS, POSTES, TYPES_CONTRAT, TYPES_ETABLISSEMENT, inL
 import { competencesList, esc, formatNombre, intOrNull, isEmail, money, refCandidat, salaireRange } from '../lib/format';
 import { addDays, addYears, dateFr, dateLongue, fmtDateTime, isValidDate, parseLocal, plageHoraire, today, tunis } from '../lib/dates';
 import { sendMail } from '../lib/mail';
-import { matchScore } from '../lib/matching';
+import { CRITERES_MATCHING, matchScore } from '../lib/matching';
+import { distanceKm, gouvernoratsDansRayon, libelleDistance, rayonValide, RAYONS } from '../lib/proximite';
+import { CATALOGUE, NOMS_CATALOGUE, competenceDuCatalogue } from '../lib/qcm';
+
+/** Catalogue groupé par famille : [clé, libellé, compétences] */
+const FAMILLES_CATALOGUE: [string, string, string[]][] = [];
+for (const x of CATALOGUE) {
+  const f = FAMILLES_CATALOGUE.find((g) => g[0] === x.famille);
+  if (f) f[2].push(x.nom); else FAMILLES_CATALOGUE.push([x.famille, x.label, [x.nom]]);
+}
 import { DIMENSIONS, DIM_KEYS } from '../lib/personality';
 import { randomHex } from '../lib/crypto';
 import { cleanQuery } from '../lib/offres';
@@ -371,7 +380,8 @@ async function offreForm(c: Ctx) {
       diplome_requis: await field(c, 'diplome_requis', 150),
       experience_min: Math.min(40, intOrNull(await field(c, 'experience_min', 3)) ?? 0),
       date_limite: await field(c, 'date_limite', 10),
-      competences_requises: [...new Set(competencesList(await field(c, 'competences_requises', 4000)))].slice(0, 30).join(', '),
+      // Uniquement des compétences du catalogue (vérifiables par QCM côté candidat)
+      competences_requises: [...new Set((await readForm(c)).getAll('competences').map((x) => competenceDuCatalogue(String(x))).filter(Boolean))].slice(0, 15).join(', '),
     };
     if (!inList(POSTES, d.titre)) errors.push('Veuillez choisir un titre de poste.');
     if (!inList(TYPES_CONTRAT, d.type_contrat)) errors.push('Type de contrat invalide.');
@@ -393,7 +403,9 @@ async function offreForm(c: Ctx) {
     }
     o = { ...o, ...d };
   }
-  return page(c, { title: id ? "Modifier l'offre" : 'Nouvelle offre', scripts: <script src="/assets/js/tags.js"></script> }, (
+  const choisies = new Set(competencesList(o.competences_requises).map((x) => competenceDuCatalogue(x)).filter(Boolean));
+  const horsCatalogue = competencesList(o.competences_requises).filter((x) => !competenceDuCatalogue(x));
+  return page(c, { title: id ? "Modifier l'offre" : 'Nouvelle offre' }, (
     <div class="container py-4"><div class="row justify-content-center"><div class="col-lg-9">
       <h1 class="h3 mb-3">{id ? "Modifier l'offre" : 'Publier une nouvelle offre'}</h1>
       <Errors errors={errors} />
@@ -411,11 +423,24 @@ async function offreForm(c: Ctx) {
             <div class="col-md-3"><label class="form-label" for="exp">Expérience min. (ans)</label><input type="number" min="0" max="40" id="exp" name="experience_min" class="form-control" value={o.experience_min ?? 0} /></div>
             <div class="col-md-3"><label class="form-label" for="dl">Date limite</label><input type="date" id="dl" name="date_limite" class="form-control" value={o.date_limite ?? ''} min={today()} /></div>
             <div class="col-12">
-              <label class="form-label">Compétences requises</label>
-              <div class="tag-input" data-name="competences_requises" data-source="/api/competences">
-                <input type="hidden" name="competences_requises" value={o.competences_requises ?? ''} />
+              <label class="form-label">Compétences requises <small class="text-muted fw-normal">(15 au maximum)</small></label>
+              <div class="form-text mt-0 mb-2">Les candidats ne peuvent pas déclarer leurs compétences : elles sont <strong>validées par des QCM chronométrés</strong>. Choisissez celles qui comptent pour ce poste (45 % du score de matching IA).</div>
+              {horsCatalogue.length > 0 && <div class="alert alert-warning small py-2">Anciennes compétences saisies librement, non vérifiables et retirées à l'enregistrement : {horsCatalogue.join(', ')}.</div>}
+              <div class="comp-catalogue">
+                {FAMILLES_CATALOGUE.map(([fam, label, noms]) => (
+                  <details open={fam === 'tronc' || noms.some((n) => choisies.has(n))}>
+                    <summary>{label} {noms.some((n) => choisies.has(n)) && <span class="badge text-bg-primary ms-1">{noms.filter((n) => choisies.has(n)).length}</span>}</summary>
+                    <div class="row row-cols-1 row-cols-md-2 g-1 pt-1 pb-2">
+                      {noms.map((n) => (
+                        <div class="col"><div class="form-check">
+                          <input class="form-check-input" type="checkbox" name="competences" value={n} id={`comp-${fam}-${noms.indexOf(n)}`} checked={choisies.has(n)} />
+                          <label class="form-check-label small" for={`comp-${fam}-${noms.indexOf(n)}`}>{n}</label>
+                        </div></div>
+                      ))}
+                    </div>
+                  </details>
+                ))}
               </div>
-              <div class="form-text">Tapez puis Entrée pour ajouter. Ces compétences comptent pour 45 % du score de matching IA.</div>
             </div>
           </div>
         </div>
@@ -441,11 +466,19 @@ r.get('/cvtheque', async (c) => {
     experience_min: intOrNull(q(c, 'experience_min')),
     salaire_max: intOrNull(q(c, 'salaire_max')),
     ville: inList(GOUVERNORATS, q(c, 'ville')) ? q(c, 'ville') : '',
+    rayon: rayonValide(q(c, 'rayon')),
+    competence: competenceDuCatalogue(q(c, 'competence')) ?? '',
   };
+  // Distance calculée depuis la ville choisie, sinon depuis celle de l'établissement
+  const centre = f.ville || (inList(GOUVERNORATS, rec.ville) ? rec.ville : '');
   const where = ["c.poste_recherche IS NOT NULL", "c.poste_recherche <> ''"];
   const params: unknown[] = [];
   if (f.poste) { where.push('c.poste_recherche = ?'); params.push(f.poste); }
-  if (f.ville) { where.push('c.ville = ?'); params.push(f.ville); }
+  if (f.rayon && centre) {
+    const proches = gouvernoratsDansRayon(centre, f.rayon);
+    where.push(`c.ville IN (${proches.map(() => '?').join(',')})`); params.push(...proches);
+  } else if (f.ville) { where.push('c.ville = ?'); params.push(f.ville); }
+  if (f.competence) { where.push('EXISTS (SELECT 1 FROM competences k WHERE k.candidat_id = c.id AND k.nom = ?)'); params.push(f.competence); }
   if (f.salaire_max) { where.push('(c.salaire_souhaite IS NULL OR c.salaire_souhaite <= ?)'); params.push(f.salaire_max); }
   if (f.annee_diplome) { where.push("EXISTS (SELECT 1 FROM diplomes d WHERE d.candidat_id = c.id AND CAST(strftime('%Y', d.date_obtention) AS INTEGER) >= ?)"); params.push(f.annee_diplome); }
   if (f.experience_min) { where.push(`${SQL_EXP_MOIS} >= ?`); params.push(f.experience_min * 12); }
@@ -456,7 +489,8 @@ r.get('/cvtheque', async (c) => {
   const pg = Math.min(Math.max(1, Number(q(c, 'page')) || 1), pages);
   const rows = await all<Row>(db,
     `SELECT c.id, c.nom, c.prenom, c.photo, c.poste_recherche, c.ville, c.salaire_souhaite, c.disponibilite, ${SQL_EXP_MOIS} AS exp_mois,
-            (SELECT 1 FROM tests_personnalite t WHERE t.candidat_id = c.id) AS has_test
+            (SELECT 1 FROM tests_personnalite t WHERE t.candidat_id = c.id) AS has_test,
+            (SELECT COUNT(*) FROM competences k WHERE k.candidat_id = c.id) AS nb_comp
      FROM candidats c WHERE ${w} ORDER BY c.updated_at DESC, c.id DESC LIMIT ${perPage} OFFSET ${(pg - 1) * perPage}`, ...params);
   const dips = new Map<number, Row[]>();
   const comm = await scoresCommunication(db, rows.map((x) => x.id));
@@ -472,12 +506,18 @@ r.get('/cvtheque', async (c) => {
       {!abo && <div class="alert alert-warning"><i class="fa-solid fa-lock me-1"></i>L'accès au détail des CV est réservé aux abonnés. <a href="/recruteur/abonnement" class="alert-link">Activer mon abonnement</a></div>}
       <form class="card border-0 shadow-sm mb-4" method="get">
         <div class="card-body row g-2 align-items-end">
-          <div class="col-md-3"><label class="form-label small">Poste</label><select name="poste" class="form-select"><Options items={POSTES} selected={f.poste} placeholder="Tous" /></select></div>
-          <div class="col-md-2"><label class="form-label small">Diplôme obtenu en (≥)</label><input type="number" name="annee_diplome" min="1970" max={tunis().getUTCFullYear()} class="form-control" placeholder="ex. 2020" value={f.annee_diplome ?? ''} /></div>
-          <div class="col-md-2"><label class="form-label small">Expérience min. (ans)</label><input type="number" min="0" name="experience_min" class="form-control" value={f.experience_min ?? ''} /></div>
-          <div class="col-md-2"><label class="form-label small">Salaire max. (TND)</label><input type="number" min="0" step="50" name="salaire_max" class="form-control" value={f.salaire_max ?? ''} /></div>
+          <div class="col-md-4"><label class="form-label small">Poste</label><select name="poste" class="form-select"><Options items={POSTES} selected={f.poste} placeholder="Tous" /></select></div>
+          <div class="col-md-4"><label class="form-label small">Compétence validée par QCM</label><select name="competence" class="form-select"><Options items={NOMS_CATALOGUE} selected={f.competence} placeholder="Toutes" /></select></div>
           <div class="col-md-2"><label class="form-label small">Ville</label><select name="ville" class="form-select"><Options items={GOUVERNORATS} selected={f.ville} placeholder="Toutes" /></select></div>
-          <div class="col-md-1 d-grid"><button class="btn btn-primary" title="Rechercher" aria-label="Rechercher"><i class="fa-solid fa-magnifying-glass"></i></button></div>
+          <div class="col-md-2"><label class="form-label small">Distance max.</label><select name="rayon" class="form-select">
+            <option value="">Toute distance</option>
+            {RAYONS.map((x) => <option value={x} selected={f.rayon === x}>{x} km</option>)}
+          </select></div>
+          <div class="col-md-3"><label class="form-label small">Diplôme obtenu en (≥)</label><input type="number" name="annee_diplome" min="1970" max={tunis().getUTCFullYear()} class="form-control" placeholder="ex. 2020" value={f.annee_diplome ?? ''} /></div>
+          <div class="col-md-3"><label class="form-label small">Expérience min. (ans)</label><input type="number" min="0" name="experience_min" class="form-control" value={f.experience_min ?? ''} /></div>
+          <div class="col-md-3"><label class="form-label small">Salaire max. (TND)</label><input type="number" min="0" step="50" name="salaire_max" class="form-control" value={f.salaire_max ?? ''} /></div>
+          <div class="col-md-3 d-grid"><button class="btn btn-primary" title="Rechercher" aria-label="Rechercher"><i class="fa-solid fa-magnifying-glass me-1"></i>Rechercher</button></div>
+          {f.rayon && centre && <div class="col-12 small text-muted">Distance à vol d'oiseau depuis {centre}{f.ville ? '' : ' (votre établissement)'}.</div>}
         </div>
       </form>
       <p class="text-muted">{total} profil(s)</p>
@@ -498,7 +538,8 @@ r.get('/cvtheque', async (c) => {
                   <li><i class="fa-solid fa-briefcase me-2 text-muted"></i>Expérience : <strong>{Math.round((cd.exp_mois / 12) * 10) / 10} an(s)</strong></li>
                   <li><i class="fa-solid fa-money-bill-wave me-2 text-muted"></i>Salaire souhaité : {money(cd.salaire_souhaite)}</li>
                   <li><i class="fa-solid fa-clock me-2 text-muted"></i>Disponibilité : {cd.disponibilite || '—'}</li>
-                  <li><i class="fa-solid fa-location-dot me-2 text-muted"></i>{cd.ville || '—'}</li>
+                  <li><i class="fa-solid fa-location-dot me-2 text-muted"></i>{cd.ville || '—'}{centre && distanceKm(centre, cd.ville) !== null && <span class="text-muted"> · {distanceKm(centre, cd.ville) === 0 ? (f.ville ? 'même gouvernorat' : 'votre gouvernorat') : `≈ ${distanceKm(centre, cd.ville)} km${f.ville ? '' : ' de vous'}`}</span>}</li>
+                  <li><i class="fa-solid fa-circle-check me-2 text-success"></i>{cd.nb_comp} compétence(s) validée(s) par QCM</li>
                 </ul>
                 <div class="small">
                   {(dips.get(cd.id) ?? []).slice(0, 2).map((d) => (
@@ -735,8 +776,8 @@ table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}.b
               {x.description && <div style="white-space:pre-line">{x.description}</div>}</div>
           ))}
           {!ct.experiences.length && <p class="muted">—</p>}
-          <h2>Compétences</h2>
-          <div>{ct.competences.map((k) => <span class="tag">{k.nom}</span>)}{!ct.competences.length && <span class="muted">—</span>}</div>
+          <h2>Compétences validées par QCM</h2>
+          <div>{ct.competences.map((k) => <span class="tag">✓ {k.nom}</span>)}{!ct.competences.length && <span class="muted">—</span>}</div>
           <h2>Langues</h2>
           <div>{ct.langues.length ? ct.langues.map((l) => `${l.langue} (${l.niveau})`).join(' · ') : <span class="muted">—</span>}</div>
           {ct.test && (
@@ -788,17 +829,13 @@ r.get('/suggestions/:id{[0-9]+}', async (c) => {
   const cands = await candidatsFull(db, ids);
   const scored = cands.map((cd) => ({ cd, s: matchScore(offre, cd) })).sort((a, b) => b.s.total - a.s.total).slice(0, 5);
   const postules = new Set((await all<Row>(db, 'SELECT candidat_id FROM candidatures WHERE offre_id = ?', offre.id)).map((x) => x.candidat_id));
-  const comm = await scoresCommunication(db, scored.map((x) => x.cd.id));
-  const crit: [keyof Omit<ReturnType<typeof matchScore>, 'total' | 'competences_matchees'>, string, number][] = [
-    ['competences', 'Compétences', 45], ['diplome', 'Diplôme', 25], ['experience', 'Expérience', 20], ['personnalite', 'Personnalité', 10],
-  ];
   return page(c, { title: 'Suggestions IA' }, (
     <div class="container py-4">
       <a href="/recruteur/offres" class="btn btn-light btn-sm mb-3"><i class="fa-solid fa-arrow-left me-1"></i>Mes offres</a>
       <div class="ai-header mb-4">
         <h1 class="h3 mb-1">🧠 Suggestions IA</h1>
         <p class="mb-0">Les 5 profils les plus pertinents pour <strong>{offre.titre}</strong> ({offre.ville})</p>
-        <small>Score = compétences 45 % · diplôme 25 % · expérience 20 % · bonus personnalité jusqu'à 10 %</small>
+        <small>Score = compétences validées par QCM 45 % · diplôme 20 % · expérience 20 % · proximité 15 % · bonus personnalité et communication jusqu'à 10 %</small>
       </div>
       {!scored.length && <Empty icon="fa-solid fa-robot">Aucun candidat ne recherche actuellement le poste « {offre.titre} ».</Empty>}
       {scored.map(({ cd, s }, rank) => {
@@ -812,15 +849,18 @@ r.get('/suggestions/:id{[0-9]+}', async (c) => {
             <div class="col-md-4">
               <div class="d-flex align-items-center gap-2">
                 <img src={photoUrl(cd.photo)} class="avatar-sm" alt="" />
-                <div><strong>{cd.prenom} {cd.nom}</strong>{postules.has(cd.id) && <> <span class="badge bg-info">A postulé</span></>} <BadgeCommunication score={comm.get(cd.id)} /><br />
-                  <small class="text-muted">{cd.experience_annees} an(s) d'exp. · {cd.ville || '—'} · {money(cd.salaire_souhaite)}</small></div>
+                <div><strong>{cd.prenom} {cd.nom}</strong>{postules.has(cd.id) && <> <span class="badge bg-info">A postulé</span></>} <BadgeCommunication score={cd.communication} /><br />
+                  <small class="text-muted">{cd.experience_annees} an(s) d'exp. · {cd.ville || '—'}{s.distance !== null && <> ({libelleDistance(s.distance)})</>} · {money(cd.salaire_souhaite)}</small></div>
               </div>
-              {s.competences_matchees.length > 0 && (
-                <div class="mt-2">{s.competences_matchees.map((m) => <span class="badge rounded-pill bg-success-subtle text-success me-1"><i class="fa-solid fa-check me-1"></i>{m}</span>)}</div>
+              {(s.competences_matchees.length > 0 || s.competences_manquantes.length > 0) && (
+                <div class="mt-2">
+                  {s.competences_matchees.map((m) => <span class="badge rounded-pill bg-success-subtle text-success me-1 mb-1" title="Validée par QCM"><i class="fa-solid fa-circle-check me-1"></i>{m}</span>)}
+                  {s.competences_manquantes.map((m) => <span class="badge rounded-pill bg-light text-muted border me-1 mb-1" title="Non validée par QCM"><i class="fa-regular fa-circle me-1"></i>{m}</span>)}
+                </div>
               )}
             </div>
             <div class="col-md">
-              {crit.map(([k, label, max]) => (
+              {CRITERES_MATCHING.map(([k, label, max]) => (
                 <div class="d-flex align-items-center small mb-1">
                   <span style="width:110px">{label}</span>
                   <div class="progress flex-grow-1" style="height:6px"><div class="progress-bar" style={`width:${(s[k] / max) * 100}%`}></div></div>

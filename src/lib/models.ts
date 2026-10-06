@@ -9,16 +9,22 @@ export type CandidatFull = Row & {
   langues: Row[];
   test: Row | null;
   experience_annees: number;
+  /** Dernier score de communication de l'entretien IA (ou null) */
+  communication: number | null;
 };
 
+const SQL_COMM = `SELECT e.candidat_id, e.score_global FROM entretiens_ia e WHERE e.statut = 'termine'
+  AND e.id = (SELECT MAX(x.id) FROM entretiens_ia x WHERE x.candidat_id = e.candidat_id AND x.statut = 'termine')`;
+
 export async function candidatFull(db: D1Database, id: number): Promise<CandidatFull | null> {
-  const [c, diplomes, experiences, competences, langues, test] = await db.batch([
+  const [c, diplomes, experiences, competences, langues, test, comm] = await db.batch([
     db.prepare('SELECT c.*, u.email FROM candidats c JOIN utilisateurs u ON u.id = c.utilisateur_id WHERE c.id = ?').bind(id),
     db.prepare('SELECT * FROM diplomes WHERE candidat_id = ? ORDER BY date_obtention DESC').bind(id),
     db.prepare('SELECT * FROM experiences WHERE candidat_id = ? ORDER BY poste_actuel DESC, date_debut DESC').bind(id),
     db.prepare('SELECT * FROM competences WHERE candidat_id = ? ORDER BY nom').bind(id),
     db.prepare('SELECT * FROM langues WHERE candidat_id = ? ORDER BY id').bind(id),
     db.prepare('SELECT * FROM tests_personnalite WHERE candidat_id = ?').bind(id),
+    db.prepare(`${SQL_COMM} AND e.candidat_id = ?`).bind(id),
   ]);
   const cand = (c.results as Row[])[0];
   if (!cand) return null;
@@ -31,6 +37,7 @@ export async function candidatFull(db: D1Database, id: number): Promise<Candidat
     langues: langues.results as Row[],
     test: ((test.results as Row[])[0] ?? null) as Row | null,
     experience_annees: experienceAnnees(exps),
+    communication: (comm.results as Row[])[0]?.score_global ?? null,
   };
 }
 
@@ -38,13 +45,14 @@ export async function candidatFull(db: D1Database, id: number): Promise<Candidat
 export async function candidatsFull(db: D1Database, ids: number[]): Promise<CandidatFull[]> {
   if (!ids.length) return [];
   const ph = ids.map(() => '?').join(',');
-  const [cs, dips, exps, comps, langs, tests] = await db.batch([
+  const [cs, dips, exps, comps, langs, tests, comms] = await db.batch([
     db.prepare(`SELECT c.*, u.email FROM candidats c JOIN utilisateurs u ON u.id = c.utilisateur_id WHERE c.id IN (${ph})`).bind(...ids),
     db.prepare(`SELECT * FROM diplomes WHERE candidat_id IN (${ph})`).bind(...ids),
     db.prepare(`SELECT * FROM experiences WHERE candidat_id IN (${ph})`).bind(...ids),
     db.prepare(`SELECT * FROM competences WHERE candidat_id IN (${ph})`).bind(...ids),
     db.prepare(`SELECT * FROM langues WHERE candidat_id IN (${ph})`).bind(...ids),
     db.prepare(`SELECT * FROM tests_personnalite WHERE candidat_id IN (${ph})`).bind(...ids),
+    db.prepare(`${SQL_COMM} AND e.candidat_id IN (${ph})`).bind(...ids),
   ]);
   const group = (rows: Row[]) => {
     const m = new Map<number, Row[]>();
@@ -53,6 +61,7 @@ export async function candidatsFull(db: D1Database, ids: number[]): Promise<Cand
   };
   const gd = group(dips.results as Row[]), ge = group(exps.results as Row[]), gc = group(comps.results as Row[]), gl = group(langs.results as Row[]);
   const gt = group(tests.results as Row[]);
+  const gm = new Map((comms.results as Row[]).map((x) => [x.candidat_id as number, x.score_global as number]));
   return (cs.results as Row[]).map((c) => {
     const e = ge.get(c.id) ?? [];
     return {
@@ -63,6 +72,7 @@ export async function candidatsFull(db: D1Database, ids: number[]): Promise<Cand
       langues: gl.get(c.id) ?? [],
       test: gt.get(c.id)?.[0] ?? null,
       experience_annees: experienceAnnees(e),
+      communication: gm.get(c.id) ?? null,
     };
   });
 }

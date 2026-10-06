@@ -1,8 +1,7 @@
 import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
-import type { AppEnv, Row } from '../types';
-import { all } from '../lib/db';
-import { COMPETENCES_PARAMEDICALES } from '../lib/data';
+import type { AppEnv } from '../types';
+import { NOMS_CATALOGUE } from '../lib/qcm';
 import { normalize } from '../lib/format';
 import { chatbotLocal, chatbotRemote, FALLBACK, type ChatMsg } from '../lib/chatbot';
 
@@ -11,9 +10,8 @@ const r = new Hono<AppEnv>();
 /* ---------- Autocomplétion des compétences ---------- */
 r.get('/api/competences', async (c) => {
   const term = normalize(c.req.query('q') ?? '');
-  const extra = await all<Row>(c.env.DB, 'SELECT nom, COUNT(*) AS n FROM competences GROUP BY nom ORDER BY n DESC LIMIT 200');
-  const pool = [...new Set([...COMPETENCES_PARAMEDICALES, ...extra.map((e) => String(e.nom))])];
-  const out = pool
+  // Uniquement le catalogue des compétences vérifiables par QCM
+  const out = NOMS_CATALOGUE
     .map((v) => ({ v, n: normalize(v) }))
     .filter((x) => !term || x.n.includes(term))
     .sort((a, b) => Number(!a.n.startsWith(term)) - Number(!b.n.startsWith(term)) || a.v.localeCompare(b.v, 'fr'))

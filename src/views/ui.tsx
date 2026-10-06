@@ -73,7 +73,8 @@ export function Jauges({ test, compact = false }: { test: Row; compact?: boolean
   );
 }
 
-export function OffreCard({ o, actions }: { o: Row; actions?: Child }) {
+/** validees : compétences validées par le candidat connecté (mise en évidence) ; info : ligne ajoutée sous le lieu */
+export function OffreCard({ o, actions, validees, info }: { o: Row; actions?: Child; validees?: Set<string>; info?: Child }) {
   const comps = competencesList(o.competences_requises);
   return (
     <div class="card border-0 shadow-sm mb-3 offer-card" id={`offre-${o.id}`}>
@@ -86,7 +87,7 @@ export function OffreCard({ o, actions }: { o: Row; actions?: Child }) {
             </div>
             <h4 class="h5 mb-1">{o.titre}</h4>
             <p class="text-muted mb-2">
-              <i class="fa-solid fa-hospital me-1"></i>{o.nom_etablissement} <span class="mx-1">·</span> <i class="fa-solid fa-location-dot me-1"></i>{o.ville}
+              <i class="fa-solid fa-hospital me-1"></i>{o.nom_etablissement} <span class="mx-1">·</span> <i class="fa-solid fa-location-dot me-1"></i>{o.ville}{info}
             </p>
             <div class="row small g-2 mb-2">
               <div class="col-sm-4"><i class="fa-solid fa-money-bill-wave text-success me-1"></i>{salaireRange(o.salaire_min, o.salaire_max)}</div>
@@ -96,7 +97,9 @@ export function OffreCard({ o, actions }: { o: Row; actions?: Child }) {
             <p class="mb-2 text-body-secondary offer-desc" style="white-space:pre-line">{o.description}</p>
             {comps.length > 0 && (
               <div class="d-flex flex-wrap gap-1">
-                {comps.map((c) => <span class="badge rounded-pill text-bg-light border">{c}</span>)}
+                {comps.map((c) => validees?.has(c)
+                  ? <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle" title="Vous avez validé cette compétence"><i class="fa-solid fa-circle-check me-1"></i>{c}</span>
+                  : <span class="badge rounded-pill text-bg-light border">{c}</span>)}
               </div>
             )}
           </div>
@@ -129,9 +132,13 @@ export function CvSections({ c }: { c: Row & { diplomes: Row[]; experiences: Row
         {!c.experiences.length && <p class="text-muted small mb-0">Aucune expérience renseignée.</p>}
       </div></div>
       <div class="card border-0 shadow-sm mb-4"><div class="card-body">
-        <h3 class="h5"><i class="fa-solid fa-star text-primary me-2"></i>Compétences</h3>
-        {c.competences.map((k) => <span class="badge rounded-pill bg-primary-subtle text-primary me-1 mb-1">{k.nom}</span>)}
-        {!c.competences.length && <p class="text-muted small mb-0">Aucune compétence.</p>}
+        <h3 class="h5"><i class="fa-solid fa-star text-primary me-2"></i>Compétences <small class="text-muted fs-6 fw-normal">validées par QCM chronométré</small></h3>
+        {c.competences.map((k) => (
+          <span class="badge rounded-pill bg-success-subtle text-success me-1 mb-1" title={`QCM : ${k.bonnes ?? '?'}/${k.total ?? '?'} · validée le ${dateFr(k.valide_le)}`}>
+            <i class="fa-solid fa-circle-check me-1"></i>{k.nom}
+          </span>
+        ))}
+        {!c.competences.length && <p class="text-muted small mb-0">Aucune compétence validée par QCM pour l'instant.</p>}
       </div></div>
     </>
   );

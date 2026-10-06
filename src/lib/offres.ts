@@ -1,7 +1,8 @@
 import type { Row } from '../types';
 import { all, val, TODAY } from './db';
 
-export type OffreFiltres = { poste?: string; ville?: string; contrat?: string; salaire_min?: number | null };
+/** villes : liste de gouvernorats acceptés (filtre de distance), prioritaire sur `ville` */
+export type OffreFiltres = { poste?: string; ville?: string; villes?: string[]; contrat?: string; salaire_min?: number | null };
 
 export const PER_PAGE = 10;
 
@@ -10,7 +11,8 @@ export async function searchOffres(db: D1Database, f: OffreFiltres, page = 1, pe
   const where = ['o.active = 1', `(o.date_limite IS NULL OR o.date_limite >= ${TODAY})`];
   const params: unknown[] = [];
   if (f.poste) { where.push('o.titre = ?'); params.push(f.poste); }
-  if (f.ville) { where.push('o.ville = ?'); params.push(f.ville); }
+  if (f.villes) { where.push(`o.ville IN (${f.villes.map(() => '?').join(',') || 'NULL'})`); params.push(...f.villes); }
+  else if (f.ville) { where.push('o.ville = ?'); params.push(f.ville); }
   if (f.contrat) { where.push('o.type_contrat = ?'); params.push(f.contrat); }
   if (f.salaire_min) { where.push('COALESCE(o.salaire_max, o.salaire_min) >= ?'); params.push(f.salaire_min); }
   const w = where.join(' AND ');

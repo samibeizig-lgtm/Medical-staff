@@ -48,6 +48,7 @@ function Nav({ c, active }: { c: Ctx; active?: string }) {
                 ['/candidat/dashboard', 'fa-gauge', 'Tableau de bord'],
                 ['/candidat/cv', 'fa-file-pen', 'Mon CV'],
                 ['/candidat/test', 'fa-brain', 'Test de personnalité'],
+                ['/candidat/qcm', 'fa-list-check', 'QCM compétences'],
                 ['/candidat/entretien-ia', 'fa-microphone-lines', 'Entretien IA'],
                 ['/candidat/offres', 'fa-magnifying-glass', 'Rechercher des offres'],
                 ['/candidat/entretiens', 'fa-calendar-check', 'Mes entretiens'],

@@ -115,6 +115,30 @@ Depuis son espace, le candidat passe un entretien de **5 questions orales** de m
 
 Le workflow de déploiement active Workers AI automatiquement. Si le jeton n'a pas la permission `Workers AI → Read`, il redéploie sans IA et affiche un avertissement. Coût indicatif : environ 300 à 500 « neurones » par entretien, soit une vingtaine d'entretiens par jour dans le quota gratuit (10 000 neurones par jour).
 
+## ✅ Compétences validées par QCM
+
+Les candidats ne déclarent plus leurs compétences : ils les **obtiennent en réussissant des QCM chronométrés** propres à leur métier (menu « QCM compétences »). Seules les compétences validées figurent sur le CV et comptent dans le matching.
+
+- **15 questions tirées au hasard** : 3 questions sur chacune de 5 compétences, choisies parmi celles du métier (12 familles : infirmier, bloc, sage-femme, anesthésie, imagerie, laboratoire, pharmacie, rééducation, nutrition, aide-soignant, accueil/secrétariat, ambulancier) et du tronc commun (hygiène, gestes d'urgence, sécurité du patient, secret professionnel). Les compétences pas encore validées passent en priorité. Les 4 choix sont mélangés à chaque fois.
+- **30 secondes par question**, contrôlées par le serveur : les questions s'enchaînent sans retour en arrière, une réponse arrivée trop tard ou une page quittée compte faux, et la bonne réponse n'est jamais envoyée au navigateur.
+- Une compétence est **validée avec au moins 2 bonnes réponses sur 3**, et le reste. **2 QCM par semaine** au maximum.
+- Banque : 44 compétences, 208 questions (`src/lib/qcm-banque.ts`, la bonne réponse est toujours écrite en premier). Les offres choisissent leurs compétences requises dans ce même catalogue.
+- La migration `0004` supprime les compétences saisies librement auparavant (non vérifiées).
+
+## 📍 Proximité et score de matching
+
+Les suggestions IA 🧠 classent les candidats selon :
+
+| Critère | Poids |
+|---|---|
+| Compétences requises validées par QCM | 45 % |
+| Diplôme | 20 % |
+| Expérience | 20 % |
+| **Proximité du lieu de travail** | 15 % |
+| Bonus : personnalité (5) + communication à l'entretien IA (5) | jusqu'à 10 % |
+
+La proximité se calcule à vol d'oiseau entre les chefs-lieux des gouvernorats du candidat et de l'offre : 100 % jusqu'à 25 km, puis décroissante jusqu'à 0 à 300 km (Tunis–Sousse ≈ 116 km → 67 %, Tunis–Sfax ≈ 236 km → 23 %). La CVthèque (filtres « Distance max. » et « Compétence validée ») et la recherche d'offres des candidats (« Distance max. » autour de leur ville) affichent les distances.
+
 ## 🤖 Chatbot Dr. Jobs
 
 Le moteur local répond instantanément aux questions courantes (CV, salaires, diplômes, entretiens, abonnement…). Une fois Workers AI activé, les questions complexes sont transmises à un modèle Llama. L'historique de conversation est limité aux 10 derniers messages.
@@ -158,12 +182,13 @@ src/
     auth.tsx             Déconnexion, mot de passe oublié, réinitialisation
     candidat.tsx         Inscription, tableau de bord, CV + photo, test, offres, entretiens
     entretien-ia.tsx     Entretien IA : questions orales chronométrées, transcription, évaluation
+    qcm.tsx              QCM de compétences chronométré (30 s par question, contrôle serveur)
     recruteur.tsx        Inscription, abonnement, offres, CVthèque, candidatures, CV + PDF,
                          suggestions IA, calendrier d'entretiens
     admin.tsx            Statistiques, utilisateurs, offres, abonnements, emails, journal
-    api.tsx              Chatbot, autocomplétion des compétences
+    api.tsx              Chatbot, liste des compétences du catalogue
   lib/                   Base D1, sessions / CSRF, hachage, dates, emails, données de référence,
-                         test de personnalité, matching IA, chatbot
+                         test de personnalité, matching IA, proximité, banque de QCM, chatbot
   views/                 Gabarit de page et composants (JSX)
 public/assets/           CSS, JavaScript, images, bibliothèques (servis directement par Cloudflare)
 migrations/              Schéma SQL de la base D1
@@ -174,10 +199,11 @@ php/                     Version d'origine PHP / MySQL
 
 ## Fonctionnalités
 
+- **QCM de compétences et proximité** : voir plus haut.
 - **Visiteur** : accueil, mission, offres filtrables (poste, gouvernorat, contrat), demandes d'emploi anonymisées.
 - **Entretien IA** : voir plus haut.
-- **Candidat** : CV structuré (photo redimensionnée dans le navigateur, 24 gouvernorats, diplômes, expériences, compétences avec autocomplétion, langues, prétentions, confidentialité des coordonnées) ; test de personnalité de 30 questions (Big Five + adaptation au milieu médical, jauges, portrait) ; bouton « Postuler » verrouillé tant que le CV et le test ne sont pas complétés ; emails de confirmation ; validation ou refus des entretiens.
-- **Établissement** : abonnement annuel de 1 000 TND (paiement simulé) ; gestion des offres ; CVthèque multicritères ; candidatures ; CV détaillé (consultations enregistrées) ; **CV en PDF** (page imprimable avec photo → « Enregistrer en PDF » du navigateur) ; **suggestions IA 🧠** (compétences 45 %, diplôme 25 %, expérience 20 %, bonus personnalité 10 %) ; calendrier d'entretiens FullCalendar (créneaux de 30 min, 8h–18h, chevauchements refusés).
+- **Candidat** : CV structuré (photo redimensionnée dans le navigateur, 24 gouvernorats, diplômes, expériences, compétences validées par QCM chronométré, langues, prétentions, confidentialité des coordonnées) ; test de personnalité de 30 questions (Big Five + adaptation au milieu médical, jauges, portrait) ; bouton « Postuler » verrouillé tant que le CV et le test ne sont pas complétés ; emails de confirmation ; validation ou refus des entretiens.
+- **Établissement** : abonnement annuel de 1 000 TND (paiement simulé) ; gestion des offres ; CVthèque multicritères (dont distance maximale et compétence validée) ; candidatures ; CV détaillé (consultations enregistrées) ; **CV en PDF** (page imprimable avec photo → « Enregistrer en PDF » du navigateur) ; **suggestions IA 🧠** (compétences validées 45 %, diplôme 20 %, expérience 20 %, proximité 15 %, bonus personnalité + communication jusqu'à 10 %) ; calendrier d'entretiens FullCalendar (créneaux de 30 min, 8h–18h, chevauchements refusés).
 - **Administrateur** : statistiques, gestion des utilisateurs (suspension avec déconnexion immédiate, réactivation, suppression), modération des offres, activation manuelle et annulation d'abonnements, journal des emails et des actions.
 - **Mot de passe oublié** : lien à usage unique valable 1 heure, 3 demandes maximum par heure, sans révéler si l'adresse existe ; toutes les sessions sont fermées après le changement.
 
