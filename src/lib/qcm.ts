@@ -1,7 +1,7 @@
 /**
  * QCM de compétences : tirage aléatoire chronométré par métier.
  * Une session = 5 compétences × 3 questions (15 questions, 30 s chacune), tirées parmi les
- * compétences du métier et du tronc commun, en priorité celles que le candidat n'a pas encore validées. Compétence validée si au moins 2 bonnes réponses sur 3.
+ * compétences du métier et du tronc commun, en priorité celles que le candidat n'a pas encore validées. Compétence validée uniquement avec 3 bonnes réponses sur 3.
  */
 import { normalize } from './format';
 import { FAMILLES_QCM, TRONC_COMMUN, type FamilleQcm } from './qcm-banque';
@@ -10,7 +10,7 @@ export const SECONDES_PAR_QUESTION = 30;
 /** Marge accordée pour le temps de chargement de la page et l'envoi */
 export const MARGE_SECONDES = 5;
 export const QUESTIONS_PAR_COMPETENCE = 3;
-export const SEUIL_VALIDATION = 2;
+export const SEUIL_VALIDATION = 3;
 export const COMPETENCES_PAR_SESSION = 5;
 export const MAX_COMPETENCES_METIER = 4;
 export const MAX_SESSIONS_SEMAINE = 2;

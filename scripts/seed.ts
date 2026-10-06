@@ -94,7 +94,7 @@ cands.forEach((cd, i) => {
   for (const x of cd.dips) out.push(`INSERT INTO diplomes (candidat_id, intitule, etablissement, date_obtention, mention) VALUES (${cid}, ${x.map(s).join(', ')});`);
   for (const x of cd.exps) out.push(`INSERT INTO experiences (candidat_id, poste, etablissement, date_debut, date_fin, poste_actuel, description) VALUES (${cid}, ${x.map(s).join(', ')});`);
   // Compétences validées par QCM (démonstration)
-  cd.comps.forEach((k, j) => out.push(`INSERT INTO competences (candidat_id, nom, bonnes, total, valide_le) VALUES (${cid}, ${s(k)}, ${j % 2 ? 2 : 3}, 3, ${s(dt(-Math.min(cd.ago, 20) + j))});`));
+  cd.comps.forEach((k, j) => out.push(`INSERT INTO competences (candidat_id, nom, bonnes, total, valide_le) VALUES (${cid}, ${s(k)}, 3, 3, ${s(dt(-Math.min(cd.ago, 20) + j))});`));
   out.push(`INSERT INTO langues (candidat_id, langue, niveau) VALUES (${cid}, 'Arabe', 'Langue maternelle'), (${cid}, 'Français', 'Courant');`);
   if (cd.test) {
     // Réponses simulées : chaque dimension reçoit la note indiquée (items inversés compris)
