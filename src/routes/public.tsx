@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { AppEnv, Row } from '../types';
 import { all, one, val, TODAY } from '../lib/db';
 import { page } from '../views/layout';
+import { CarteArticle } from './blog';
 import { Empty, OffreCard, Options, Pagination } from '../views/ui';
 import { GOUVERNORATS, POSTES, RUBRIQUES, TYPES_CONTRAT, inList } from '../lib/data';
 import { excerpt, formatNombre, money, refCandidat } from '../lib/format';
@@ -14,7 +15,7 @@ const r = new Hono<AppEnv>();
 /* ---------- Accueil ---------- */
 r.get('/', async (c) => {
   const db = c.env.DB;
-  const [stats, dernieres] = await Promise.all([
+  const [stats, dernieres, articles] = await Promise.all([
     one<Row>(
       db,
       `SELECT (SELECT COUNT(*) FROM offres WHERE active = 1 AND (date_limite IS NULL OR date_limite >= ${TODAY})) AS offres,
@@ -26,6 +27,7 @@ r.get('/', async (c) => {
       `SELECT o.*, r.nom_etablissement FROM offres o JOIN recruteurs r ON r.id = o.recruteur_id
        WHERE o.active = 1 AND (o.date_limite IS NULL OR o.date_limite >= ${TODAY}) ORDER BY o.created_at DESC, o.id DESC LIMIT 3`,
     ),
+    all<Row>(db, 'SELECT id, slug, titre, categorie, resume, image, photo, lecture, created_at FROM articles WHERE publie = 1 ORDER BY created_at DESC, id DESC LIMIT 3').catch(() => [] as Row[]),
   ]);
   const prix = formatNombre(Number(c.env.ABONNEMENT_PRIX));
   const temoignages = [
@@ -140,6 +142,18 @@ r.get('/', async (c) => {
                 </div></div>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {articles.length > 0 && (
+        <section class="bg-soft py-5">
+          <div class="container">
+            <div class="d-flex justify-content-between align-items-end mb-3">
+              <h2 class="section-title mb-0">Conseils et actualités</h2>
+              <a href="/blog">Tous les articles <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="row g-4">{articles.map((x) => <div class="col-md-4"><CarteArticle a={x} /></div>)}</div>
           </div>
         </section>
       )}

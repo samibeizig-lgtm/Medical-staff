@@ -162,6 +162,9 @@ function base(prix: string): Intent[] {
       liens: [{ label: 'Mot de passe oublié', url: '/mot-de-passe-oublie' }] },
     { id: 'lettre', k: ['lettre de motivation', 'motivation'], fort: ['lettre de motivation'],
       r: () => `Une lettre de motivation paramédicale tient en une page : 1) pourquoi cet établissement et ce service, 2) vos compétences clés illustrées par une expérience concrète, 3) vos qualités humaines (empathie, rigueur, gestion du stress) et votre disponibilité.` },
+    { id: 'blog', k: ['blog', 'article*', 'actualite*', 'conseil*', 'temoignage*', 'etranger', 'travailler a l etranger', 'burn out', 'stress', 'travail de nuit', 'marche du travail'], fort: ['blog', 'article*', 'etranger', 'burn out'],
+      r: () => `Le blog de medicalstaff.tn publie des articles pratiques : réussir son entretien, rédiger son CV, le marché de l'emploi paramédical en Tunisie, travailler à l'étranger, gérer le stress et le travail de nuit, négocier son salaire, évoluer vers l'encadrement…`,
+      liens: [{ label: 'Lire le blog', url: '/blog' }] },
     { id: 'contact', k: ['contact', 'contacter', 'email', 'telephone', 'support', 'reclamation', 'probleme technique'],
       r: () => `Vous pouvez écrire à contact@medicalstaff.tn. Décrivez votre problème (page concernée, message affiché) pour une réponse plus rapide.` },
   ];

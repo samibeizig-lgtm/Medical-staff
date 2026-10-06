@@ -141,6 +141,12 @@ Les suggestions IA 🧠 classent les candidats selon :
 
 La proximité se calcule à vol d'oiseau entre les chefs-lieux des gouvernorats du candidat et de l'offre : 100 % jusqu'à 25 km, puis décroissante jusqu'à 0 à 300 km (Tunis–Sousse ≈ 116 km → 67 %, Tunis–Sfax ≈ 236 km → 23 %). La CVthèque (filtres « Distance max. » et « Compétence validée ») et la recherche d'offres des candidats (« Distance max. » autour de leur ville) affichent les distances.
 
+## 📰 Blog
+
+13 articles sur le milieu de travail (entretien d'embauche, portrait d'une sage-femme, marché de l'emploi en Tunisie, travail à l'étranger, CV, stress, travail de nuit, jeunes diplômés, hygiène des mains, communication, salaire, fidélisation des équipes, évolution de carrière) sont publiés dans la rubrique **Blog** et sur l'accueil. Leur texte source se trouve dans `content/blog/` (la migration `0006` est générée par `scripts/blog-sql.ts`).
+
+L'administration (**Administration › Blog**) permet de modifier, publier, dépublier ou supprimer un article, d'en créer de nouveaux (mise en forme simple de type Markdown) et de **téléverser une photo** par article (redimensionnée dans le navigateur). Sans photo, une illustration aux couleurs de la charte est affichée (générée par `scripts/blog-couvertures.py`, pictogrammes Font Awesome).
+
 ## 🤖 Chatbot Dr. Jobs
 
 Dr. Jobs comprend la question (mots entiers, métier et ville détectés, y compris « kiné », « labo », « Djerba »…) et répond **à partir des données réelles du site** :

@@ -29,10 +29,11 @@
       const f = photo.files[0];
       if (!f) return;
       if (!/^image\/(jpeg|png|gif)$/.test(f.type)) { alert('Format de photo non autorisé (JPG, PNG ou GIF).'); photo.value = ''; return; }
-      if (f.size > 2 * 1024 * 1024) { alert('La photo ne doit pas dépasser 2 Mo.'); photo.value = ''; return; }
+      const limite = Number(photo.dataset.limite) || 2;
+      if (f.size > limite * 1024 * 1024) { alert('La photo ne doit pas dépasser ' + limite + ' Mo.'); photo.value = ''; return; }
       const img = new Image();
       img.onload = () => {
-        const max = 400, ratio = Math.min(1, max / Math.max(img.width, img.height));
+        const max = Number(photo.dataset.max) || 400, ratio = Math.min(1, max / Math.max(img.width, img.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.round(img.width * ratio);
         canvas.height = Math.round(img.height * ratio);

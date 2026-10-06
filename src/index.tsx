@@ -4,6 +4,7 @@ import { appMiddleware } from './lib/http';
 import { page } from './views/layout';
 import { Empty } from './views/ui';
 import publicRoutes from './routes/public';
+import blogRoutes from './routes/blog';
 import authRoutes from './routes/auth';
 import candidatRoutes from './routes/candidat';
 import entretienIaRoutes from './routes/entretien-ia';
@@ -17,6 +18,7 @@ const app = new Hono<AppEnv>();
 app.use('*', appMiddleware);
 
 app.route('/', publicRoutes);
+app.route('/', blogRoutes);
 app.route('/', authRoutes);
 app.route('/candidat/entretien-ia', entretienIaRoutes);
 app.route('/candidat/qcm', qcmRoutes);

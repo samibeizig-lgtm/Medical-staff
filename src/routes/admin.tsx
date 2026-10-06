@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import type { AppEnv, Row } from '../types';
 import { all, NOW, one, run, TODAY, val } from '../lib/db';
-import { field, flash, q, redirect, requireRole, type Ctx } from '../lib/http';
+import { field, flash, q, readForm, redirect, requireRole, type Ctx } from '../lib/http';
+import { detectImage } from '../lib/images';
+import { tempsLecture } from '../lib/markdown';
+import { normalize } from '../lib/format';
 import { loginPage } from '../lib/auth';
 import { abonnementActif } from '../lib/models';
 import { esc, formatNombre, intOrNull, money, refCandidat, salaireRange } from '../lib/format';
@@ -32,6 +35,7 @@ const NAV: [string, string, string][] = [
   ['utilisateurs', 'fa-users', 'Utilisateurs'],
   ['offres', 'fa-briefcase', 'Offres'],
   ['abonnements', 'fa-credit-card', 'Abonnements'],
+  ['blog', 'fa-newspaper', 'Blog'],
   ['emails', 'fa-envelope', 'Emails'],
   ['journal', 'fa-clock-rotate-left', 'Journal'],
 ];
@@ -486,6 +490,158 @@ r.get('/journal', async (c) => {
       </div>
     </AdminPage>
   ));
+});
+
+/* ---------- Blog ---------- */
+r.get('/blog', async (c) => {
+  const rows = await all<Row>(c.env.DB, 'SELECT id, slug, titre, categorie, publie, vues, created_at, photo FROM articles ORDER BY created_at DESC, id DESC');
+  const csrf = c.get('csrf');
+  return page(c, { title: 'Administration – blog' }, (
+    <AdminPage active="blog">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <p class="text-muted mb-0">{rows.length} article(s) · {rows.filter((x) => x.publie).length} publié(s)</p>
+        <a href="/admin/blog/nouveau" class="btn btn-primary"><i class="fa-solid fa-plus me-1"></i>Nouvel article</a>
+      </div>
+      <div class="table-responsive"><table class="table table-hover align-middle bg-white shadow-sm rounded">
+        <thead class="table-light"><tr><th>Article</th><th>Catégorie</th><th>Publié le</th><th class="text-end">Vues</th><th>Statut</th><th></th></tr></thead>
+        <tbody>
+          {rows.map((a) => (
+            <tr>
+              <td><strong>{a.titre}</strong>{a.photo && <span class="badge text-bg-light border ms-1" title="Photo téléversée"><i class="fa-solid fa-image"></i></span>}<br /><small class="text-muted">/blog/{a.slug}</small></td>
+              <td class="small">{a.categorie}</td>
+              <td class="small">{dateFr(a.created_at)}</td>
+              <td class="text-end">{a.vues}</td>
+              <td>{a.publie ? <span class="badge text-bg-success">Publié</span> : <span class="badge text-bg-secondary">Brouillon</span>}</td>
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-outline-primary" href={`/admin/blog/${a.id}`} title="Modifier"><i class="fa-solid fa-pen"></i></a>{' '}
+                {a.publie ? <a class="btn btn-sm btn-outline-secondary" href={`/blog/${a.slug}`} target="_blank" title="Voir"><i class="fa-solid fa-eye"></i></a> : null}{' '}
+                <form method="post" action={`/admin/blog/${a.id}/publier`} class="d-inline"><Csrf token={csrf} />
+                  <button class="btn btn-sm btn-outline-secondary" title={a.publie ? 'Dépublier' : 'Publier'}><i class={`fa-solid ${a.publie ? 'fa-eye-slash' : 'fa-upload'}`}></i></button></form>{' '}
+                <form method="post" action={`/admin/blog/${a.id}/supprimer`} class="d-inline" onsubmit="return confirm('Supprimer définitivement cet article ?')"><Csrf token={csrf} />
+                  <button class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="fa-solid fa-trash"></i></button></form>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table></div>
+    </AdminPage>
+  ));
+});
+
+const slugify = (t: string) => normalize(t).replace(/\s+/g, '-').slice(0, 80).replace(/-+$/, '') || 'article';
+const MAX_PHOTO_BLOG = 3_000_000;
+
+async function articleForm(c: Ctx) {
+  const db = c.env.DB;
+  const id = Number(c.req.param('id') ?? 0) || 0;
+  let a: Row | null = id ? await one<Row>(db, 'SELECT * FROM articles WHERE id = ?', id) : null;
+  if (id && !a) return c.notFound();
+  a ??= { titre: '', slug: '', categorie: '', resume: '', contenu: '', publie: 1, image: null, photo: null };
+  const errors: string[] = [];
+  if (c.req.method === 'POST') {
+    const fd = await readForm(c);
+    const d = {
+      titre: await field(c, 'titre', 200),
+      slug: slugify((await field(c, 'slug', 100)) || (await field(c, 'titre', 200))),
+      categorie: await field(c, 'categorie', 60),
+      resume: await field(c, 'resume', 400),
+      contenu: await field(c, 'contenu', 30000),
+      publie: fd.get('publie') ? 1 : 0,
+    };
+    if (d.titre.length < 5) errors.push('Le titre doit contenir au moins 5 caractères.');
+    if (!d.categorie) errors.push('Choisissez une catégorie.');
+    if (d.resume.length < 20) errors.push('Le résumé doit contenir au moins 20 caractères.');
+    if (d.contenu.length < 100) errors.push("Le contenu de l'article est trop court.");
+    if (await val(db, 'SELECT 1 FROM articles WHERE slug = ? AND id <> ?', d.slug, id)) errors.push('Cette adresse (slug) est déjà utilisée par un autre article.');
+    let photo: { cle: string; mime: string; data: ArrayBuffer } | null = null;
+    const file = fd.get('photo');
+    if (file && typeof file !== 'string' && file.size > 0) {
+      if (file.size > MAX_PHOTO_BLOG) errors.push('La photo est trop volumineuse (3 Mo maximum après redimensionnement).');
+      else {
+        const data = await file.arrayBuffer();
+        const mime = detectImage(new Uint8Array(data.slice(0, 12)));
+        if (!mime) errors.push('Format de photo non autorisé (JPG, PNG, GIF ou WebP).');
+        else photo = { cle: randomHex(12), mime, data };
+      }
+    }
+    if (!errors.length) {
+      const retirer = !!fd.get('retirer_photo');
+      const ops = [];
+      if (photo) ops.push(db.prepare('INSERT INTO blog_photos (cle, mime, data) VALUES (?, ?, ?)').bind(photo.cle, photo.mime, photo.data));
+      const nouvellePhoto = photo ? photo.cle : retirer ? null : a.photo ?? null;
+      if (a.photo && a.photo !== nouvellePhoto) ops.push(db.prepare('DELETE FROM blog_photos WHERE cle = ?').bind(a.photo));
+      const lecture = tempsLecture(d.contenu);
+      if (id) {
+        ops.push(db.prepare(`UPDATE articles SET titre=?, slug=?, categorie=?, resume=?, contenu=?, publie=?, photo=?, lecture=?, updated_at=${NOW} WHERE id=?`)
+          .bind(d.titre, d.slug, d.categorie, d.resume, d.contenu, d.publie, nouvellePhoto, lecture, id));
+      } else {
+        ops.push(db.prepare('INSERT INTO articles (titre, slug, categorie, resume, contenu, publie, photo, lecture, image) VALUES (?,?,?,?,?,?,?,?,?)')
+          .bind(d.titre, d.slug, d.categorie, d.resume, d.contenu, d.publie, nouvellePhoto, lecture, '/assets/img/blog/12-fideliser-equipes.svg'));
+      }
+      await db.batch(ops);
+      await journal(c, `${id ? 'Modification' : 'Création'} de l'article « ${d.titre} »`);
+      flash(c, 'success', id ? 'Article mis à jour.' : 'Article créé.');
+      return redirect(c, '/admin/blog');
+    }
+    a = { ...a, ...d };
+  }
+  const cats = (await all<Row>(db, 'SELECT DISTINCT categorie FROM articles ORDER BY categorie')).map((x) => String(x.categorie));
+  const apercu = a.photo ? `/blog/photo/${a.photo}` : a.image || '';
+  return page(c, { title: id ? "Modifier l'article" : 'Nouvel article' }, (
+    <AdminPage active="blog">
+      <a href="/admin/blog" class="btn btn-light btn-sm mb-3"><i class="fa-solid fa-arrow-left me-1"></i>Articles</a>
+      {errors.length > 0 && <div class="alert alert-danger"><ul class="mb-0">{errors.map((e) => <li>{e}</li>)}</ul></div>}
+      <form method="post" enctype="multipart/form-data" class="card border-0 shadow-sm"><div class="card-body p-4">
+        <Csrf token={c.get('csrf')} />
+        <div class="row g-3">
+          <div class="col-md-8"><label class="form-label" for="b-titre">Titre *</label><input id="b-titre" name="titre" class="form-control" required maxlength={200} value={a.titre} /></div>
+          <div class="col-md-4"><label class="form-label" for="b-cat">Catégorie *</label><input id="b-cat" name="categorie" list="b-cats" class="form-control" required maxlength={60} value={a.categorie} />
+            <datalist id="b-cats">{cats.map((x) => <option value={x} />)}</datalist></div>
+          <div class="col-md-8"><label class="form-label" for="b-resume">Résumé (affiché sur la liste des articles) *</label><textarea id="b-resume" name="resume" rows={2} class="form-control" required maxlength={400}>{a.resume}</textarea></div>
+          <div class="col-md-4"><label class="form-label" for="b-slug">Adresse de l'article</label>
+            <div class="input-group"><span class="input-group-text small">/blog/</span><input id="b-slug" name="slug" class="form-control" maxlength={100} value={a.slug} placeholder="générée depuis le titre" /></div></div>
+          <div class="col-md-8">
+            <label class="form-label" for="b-contenu">Contenu *</label>
+            <textarea id="b-contenu" name="contenu" rows={20} class="form-control font-monospace small" required>{a.contenu}</textarea>
+            <div class="form-text">Mise en forme : <code>## Titre</code>, <code>### Sous-titre</code>, <code>- liste</code>, <code>1. liste numérotée</code>, <code>**gras**</code>, <code>*italique*</code>, <code>&gt; encadré</code>, <code>[lien](https://…)</code>. Laissez une ligne vide entre deux paragraphes.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Photo de l'article</label>
+            {apercu ? <img src={apercu} id="photo-preview" class="img-fluid rounded mb-2 border" alt="Aperçu" /> : <img id="photo-preview" class="img-fluid rounded mb-2" alt="" />}
+            <input type="file" name="photo" id="photo-input" data-max="1400" data-limite="15" class="form-control form-control-sm" accept="image/jpeg,image/png,image/gif" />
+            <div class="form-text">Format paysage conseillé (16/9). La photo est redimensionnée automatiquement. Sans photo, l'illustration par défaut est utilisée.</div>
+            {a.photo && <div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="retirer_photo" value="1" id="b-retirer" /><label class="form-check-label small" for="b-retirer">Retirer la photo (revenir à l'illustration)</label></div>}
+            <div class="form-check form-switch mt-3"><input class="form-check-input" type="checkbox" name="publie" value="1" id="b-publie" checked={!!a.publie} /><label class="form-check-label" for="b-publie">Publié (visible sur le site)</label></div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer bg-white text-end"><button class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i>Enregistrer</button></div>
+      </form>
+    </AdminPage>
+  ));
+}
+r.on(['GET', 'POST'], '/blog/nouveau', articleForm);
+r.on(['GET', 'POST'], '/blog/:id{[0-9]+}', articleForm);
+
+r.post('/blog/:id{[0-9]+}/publier', async (c) => {
+  const id = Number(c.req.param('id'));
+  await run(c.env.DB, `UPDATE articles SET publie = 1 - publie, updated_at = ${NOW} WHERE id = ?`, id);
+  await journal(c, `Publication / dépublication de l'article #${id}`);
+  return redirect(c, '/admin/blog');
+});
+
+r.post('/blog/:id{[0-9]+}/supprimer', async (c) => {
+  const id = Number(c.req.param('id'));
+  const a = await one<Row>(c.env.DB, 'SELECT titre, photo FROM articles WHERE id = ?', id);
+  if (a) {
+    await c.env.DB.batch([
+      c.env.DB.prepare('DELETE FROM articles WHERE id = ?').bind(id),
+      c.env.DB.prepare('DELETE FROM blog_photos WHERE cle = ?').bind(a.photo ?? ''),
+    ]);
+    await journal(c, `Suppression de l'article « ${a.titre} »`);
+    flash(c, 'success', 'Article supprimé.');
+  }
+  return redirect(c, '/admin/blog');
 });
 
 export default r;

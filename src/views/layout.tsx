@@ -23,6 +23,7 @@ function Nav({ c, active }: { c: Ctx; active?: string }) {
             <li class="nav-item"><a class={cls('mission')} href="/mission">Notre mission</a></li>
             <li class="nav-item"><a class={cls('offres')} href={u?.type === 'candidat' ? '/candidat/offres' : '/offres'}>Offres d'emploi</a></li>
             <li class="nav-item"><a class={cls('demandes')} href="/demandes">Demandes d'emploi</a></li>
+            <li class="nav-item"><a class={cls('blog')} href="/blog">Blog</a></li>
           </ul>
           <ul class="navbar-nav">
             {!u && (
@@ -162,6 +163,7 @@ function Footer() {
                 <li><a href="/mission">Notre mission</a></li>
                 <li><a href="/offres">Offres d'emploi</a></li>
                 <li><a href="/demandes">Demandes d'emploi</a></li>
+                <li><a href="/blog">Blog</a></li>
               </ul>
             </div>
             <div class="col-6 col-md-3">
