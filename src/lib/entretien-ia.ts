@@ -27,7 +27,7 @@ export type Critere = keyof typeof CRITERES;
 export const CRITERE_KEYS = Object.keys(CRITERES) as Critere[];
 
 /* ---------- Banque de questions ---------- */
-const GENERALES = [
+export const GENERALES = [
   "Présentez-vous en quelques phrases et expliquez pourquoi vous avez choisi ce métier.",
   "Un patient anxieux refuse un soin. Que lui dites-vous pour le rassurer ?",
   "Comment annonceriez-vous un retard ou une mauvaise nouvelle à la famille d'un patient ?",
@@ -38,7 +38,7 @@ const GENERALES = [
   "Décrivez une situation stressante vécue au travail et la façon dont vous avez communiqué pendant cette situation.",
 ];
 
-const PAR_FAMILLE: Record<string, string[]> = {
+export const PAR_FAMILLE: Record<string, string[]> = {
   infirmier: [
     "Expliquez à un patient, avec des mots simples, comment va se dérouler la pose de sa perfusion.",
     "Un patient se plaint que personne ne répond à sa sonnette. Que lui répondez-vous ?",
