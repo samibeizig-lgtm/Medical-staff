@@ -4,6 +4,7 @@
  * la première de la liste (les choix sont mélangés à l'affichage).
  * Format d'une question : [énoncé, bonne réponse, distracteur, distracteur, distracteur]
  */
+import { SUITE } from './qcm-suite';
 export type QuestionBrute = readonly [string, string, string, string, string];
 export type CompetenceQcm = { nom: string; questions: readonly QuestionBrute[] };
 export type FamilleQcm = { cle: string; label: string; competences: readonly CompetenceQcm[] };
@@ -581,3 +582,9 @@ export const FAMILLES_QCM: readonly FamilleQcm[] = [
   { cle: 'encadrement_bloc', label: 'Encadrement du bloc opératoire', competences: [ENCADREMENT, QUALITE, comp('Bloc opératoire'), comp('Asepsie et stérilisation')] },
   { cle: 'encadrement_radio', label: "Encadrement de l'imagerie", competences: [ENCADREMENT, QUALITE, comp('Radioprotection'), comp('Scanner et IRM')] },
 ];
+
+/* ---------- Questions complémentaires (src/lib/qcm-suite) : objectif 20 questions par compétence ---------- */
+for (const c of new Set([TRONC_COMMUN, ...FAMILLES_QCM].flatMap((f) => f.competences))) {
+  const suite = SUITE[c.nom];
+  if (suite) (c as { questions: readonly QuestionBrute[] }).questions = [...c.questions, ...suite];
+}

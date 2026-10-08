@@ -10,7 +10,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { hashPassword } from '../src/lib/crypto.ts';
-import { FAMILLES_QCM, TRONC_COMMUN } from '../src/lib/qcm-banque.ts';
+import { readFileSync } from 'node:fs';
 import { DIM_KEYS, QUESTIONS, personalityPortrait, personalityScores } from '../src/lib/personality.ts';
 
 const s = (v: unknown) => (v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "''")}'`);
@@ -83,7 +83,9 @@ const cands: Cand[] = [
     dips: [['Licence en sciences infirmières', 'ISSTS Monastir', '2024-07-01', 'Très bien']], exps: [],
     comps: ['Prélèvements sanguins', 'Hygiène et prévention des infections'], test: null },
 ];
-const noms = new Set([TRONC_COMMUN, ...FAMILLES_QCM].flatMap((f) => f.competences.map((c) => c.nom)));
+// Noms des compétences du catalogue (lus dans la banque de QCM)
+const banque = readFileSync(new URL('../src/lib/qcm-banque.ts', import.meta.url), 'utf8');
+const noms = new Set([...banque.matchAll(/nom: (?:'((?:[^'\\]|\\.)*)'|"([^"]*)")/g)].map((m) => (m[1] ?? m[2]).replace(/\\'/g, "'")));
 for (const x of [...cands.flatMap((c) => c.comps), ...offres.flatMap((o) => o[9].split(', '))]) if (!noms.has(x)) throw new Error(`Compétence hors catalogue : ${x}`);
 const candIds: number[] = [];
 cands.forEach((cd, i) => {
