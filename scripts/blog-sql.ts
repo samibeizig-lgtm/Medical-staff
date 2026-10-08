@@ -3,7 +3,7 @@
  * Usage : node --experimental-strip-types --no-warnings scripts/blog-sql.ts
  * (Les articles se modifient ensuite depuis l'administration : /admin/blog.)
  */
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const dir = new URL('../content/blog/', import.meta.url);
 const s = (v: unknown) => (v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "''")}'`);
@@ -40,9 +40,12 @@ fichiers.forEach((f, i) => {
   const meta = Object.fromEntries(m[1].split('\n').map((l) => [l.slice(0, l.indexOf(':')).trim(), l.slice(l.indexOf(':') + 1).trim()]));
   const slug = f.replace(/^\d+-/, '').replace(/\.md$/, '');
   // Le premier article reprend la photo de l'accueil ; les autres ont une illustration aux couleurs de la charte
-  const image = i === 0 ? '/assets/img/infirmiere.jpg' : `/assets/img/blog/${f.replace(/\.md$/, '')}.svg`;
+  // Photo fournie (public/assets/img/blog/<slug>.jpg) si elle existe, sinon illustration aux couleurs de la charte
+  const photo = new URL(`../public/assets/img/blog/${slug}.jpg`, import.meta.url);
+  const image = i === 0 ? '/assets/img/infirmiere.jpg' : existsSync(photo) ? `/assets/img/blog/${slug}.jpg` : `/assets/img/blog/${f.replace(/\.md$/, '')}.svg`;
   const jours = (i + 1) * 4; // publication étalée dans le temps (le premier article est le plus récent)
   out.push(`INSERT INTO articles (slug, titre, categorie, resume, contenu, image, lecture, created_at) VALUES (${[slug, meta.titre, meta.categorie, meta.resume, m[2].trim(), image, Number(meta.lecture) || 5].map(s).join(', ')}, datetime('now', '+1 hour', '-${jours} days'));`);
 });
-writeFileSync(new URL('../migrations/0006_blog.sql', import.meta.url), out.join('\n') + '\n');
+// 0006 est déjà appliquée en production : on n'écrit le fichier que sur demande explicite
+if (process.argv.includes('--ecrire')) writeFileSync(new URL('../migrations/0006_blog.sql', import.meta.url), out.join('\n') + '\n');
 console.log(`${fichiers.length} articles → migrations/0006_blog.sql`);
