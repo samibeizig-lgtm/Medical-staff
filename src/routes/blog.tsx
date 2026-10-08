@@ -37,10 +37,14 @@ r.get('/blog', async (c) => {
   const w = cat ? 'publie = 1 AND categorie = ?' : 'publie = 1';
   const params = cat ? [cat] : [];
   const total = (await val<number>(db, `SELECT COUNT(*) FROM articles WHERE ${w}`, ...params)) ?? 0;
-  const pages = Math.max(1, Math.ceil(total / PAR_PAGE));
+  // Sans filtre, la page 1 a un article « à la une » en plus de la grille : les rangées de 3 restent complètes
+  const alaUne = cat ? 0 : 1;
+  const pages = Math.max(1, Math.ceil(Math.max(0, total - alaUne) / PAR_PAGE));
   const pg = Math.min(Math.max(1, Number(q(c, 'page')) || 1), pages);
-  const rows = await all<Row>(db, `SELECT id, slug, titre, categorie, resume, image, photo, lecture, created_at FROM articles WHERE ${w} ORDER BY created_at DESC, id DESC LIMIT ${PAR_PAGE} OFFSET ${(pg - 1) * PAR_PAGE}`, ...params);
-  const [une, ...autres] = pg === 1 && !cat ? rows : [null, ...rows];
+  const limite = PAR_PAGE + (pg === 1 ? alaUne : 0);
+  const decalage = pg === 1 ? 0 : alaUne + (pg - 1) * PAR_PAGE;
+  const rows = await all<Row>(db, `SELECT id, slug, titre, categorie, resume, image, photo, lecture, created_at FROM articles WHERE ${w} ORDER BY created_at DESC, id DESC LIMIT ${limite} OFFSET ${decalage}`, ...params);
+  const [une, ...autres] = pg === 1 && alaUne ? rows : [null, ...rows];
   return page(c, { title: 'Blog', active: 'blog' }, (
     <>
       <section class="page-header"><div class="container">
