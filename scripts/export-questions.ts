@@ -20,6 +20,16 @@ const LABELS_IA: Record<string, string> = {
 
 let nQ = 0, nComp = 0;
 const vues = new Map<string, string>(); // compétence → section où elle est détaillée
+/** Ordre des choix dans le document : mélangé, mais identique à chaque génération (calculé à partir de l'énoncé) */
+function ordre(enonce: string): number[] {
+  let h = 2166136261;
+  for (const ch of enonce) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const a = [0, 1, 2, 3];
+  for (let i = 3; i > 0; i--) { h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  positions[a.indexOf(0)]++;
+  return a;
+}
+const positions = [0, 0, 0, 0];
 const ancre = (nom: string) => 'c-' + nom.normalize('NFD').replace(/[^\w]+/g, '-').toLowerCase();
 
 function competence(c: CompetenceQcm, section: string) {
@@ -29,7 +39,7 @@ function competence(c: CompetenceQcm, section: string) {
   ${c.questions.map((q, i) => {
     nQ++;
     return `<table class="q"><tr><td class="num">${i + 1}</td><td class="enonce" colspan="2">${e(q[0])}</td></tr>
-      <tr><td></td><td class="choix"><ol type="A">${q.slice(1).map((r, k) => `<li class="${k === 0 ? 'bon' : ''}">${e(r)}${k === 0 ? ' <b>✔ bonne réponse</b>' : ''}</li>`).join('')}</ol></td>
+      <tr><td></td><td class="choix"><ol type="A">${ordre(q[0]).map((k) => `<li class="${k === 0 ? 'bon' : ''}">${e(q[1 + k])}${k === 0 ? ' <b>✔ bonne réponse</b>' : ''}</li>`).join('')}</ol></td>
       <td class="avis">☐ Validée<br>☐ À corriger<br><span class="ligne">Remarque :</span></td></tr></table>`;
   }).join('')}</div>`;
 }
@@ -38,7 +48,7 @@ const postesQcm = (cle: string) => POSTES.filter((p) => familleQcm(p).cle === cl
 const postesIa = (cle: string) => POSTES.filter((p) => familleDuPoste(p) === cle);
 
 let qcm = `<h2 id="qcm">Partie 2 – QCM de compétences</h2>
-<p class="intro">Chaque QCM tire au hasard ${COMPETENCES_PAR_SESSION} compétences (celles du métier et du tronc commun) et ${QUESTIONS_PAR_COMPETENCE} questions par compétence, soit ${COMPETENCES_PAR_SESSION * QUESTIONS_PAR_COMPETENCE} questions de ${SECONDES_PAR_QUESTION} secondes. Une compétence est validée avec ${SEUIL_VALIDATION} bonnes réponses sur ${QUESTIONS_PAR_COMPETENCE}. Les 4 choix sont mélangés à l'écran : la <b>bonne réponse</b> est indiquée ici en vert (choix A dans ce document).</p>
+<p class="intro">Chaque QCM tire au hasard ${COMPETENCES_PAR_SESSION} compétences (celles du métier et du tronc commun) et ${QUESTIONS_PAR_COMPETENCE} questions par compétence, soit ${COMPETENCES_PAR_SESSION * QUESTIONS_PAR_COMPETENCE} questions de ${SECONDES_PAR_QUESTION} secondes. Une compétence est validée avec ${SEUIL_VALIDATION} bonnes réponses sur ${QUESTIONS_PAR_COMPETENCE}. Sur le site, l'ordre des 4 choix est tiré au hasard à chaque QCM : la bonne réponse n'est jamais à une place fixe. Dans ce document, les choix sont également mélangés et la <b>bonne réponse</b> est indiquée en vert ✔.</p>
 <h3 class="famille">Tronc commun <span>tous les postes</span></h3>
 ${TRONC_COMMUN.competences.map((c) => competence(c, 'Tronc commun')).join('')}`;
 for (const f of FAMILLES_QCM) {
@@ -116,4 +126,5 @@ ${annexe}
 </body></html>`;
 
 writeFileSync(process.argv[2] ?? 'questions.html', html);
+console.log(`Bonne réponse en A/B/C/D : ${positions.join(' / ')}`);
 console.log(`${nIa} questions d'entretien, ${nComp} compétences, ${nQ} questions de QCM`);
