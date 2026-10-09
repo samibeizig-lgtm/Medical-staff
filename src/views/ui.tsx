@@ -161,15 +161,15 @@ export function Kpi({ icon, value, label }: { icon: string; value: Child; label:
   );
 }
 
-export function AuthCard({ icon, iconClass = '', title, subtitle, children, width = 'col-md-6 col-lg-4' }: { icon: string; iconClass?: string; title: string; subtitle?: Child; children?: Child; width?: string }) {
+export function AuthCard({ icon, iconClass = '', title, subtitle, children, width = 'col-md-8 col-lg-6 col-xl-5' }: { icon: string; iconClass?: string; title: string; subtitle?: Child; children?: Child; width?: string }) {
   return (
-    <div class="container py-5">
+    <section class="auth-zone"><div class="container">
       <div class="row justify-content-center">
         <div class={width}>
           <div class="card border-0 shadow auth-card">
             <div class="card-body p-4 p-md-5">
               <div class="text-center mb-4">
-                <div class={`icon-circle ${iconClass} mx-auto mb-2`}><i class={`fa-solid ${icon}`}></i></div>
+                <div class={`icon-circle ${iconClass} mx-auto mb-3`}><i class={`fa-solid ${icon}`}></i></div>
                 <h1 class="h3">{title}</h1>
                 {subtitle && <p class="text-muted small">{subtitle}</p>}
               </div>
@@ -178,7 +178,7 @@ export function AuthCard({ icon, iconClass = '', title, subtitle, children, widt
           </div>
         </div>
       </div>
-    </div>
+    </div></section>
   );
 }
 

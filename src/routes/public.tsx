@@ -35,144 +35,204 @@ r.get('/', async (c) => {
     { nom: 'Dr. Karim M.', role: 'Directeur, Clinique Les Oliviers', texte: 'Les suggestions IA nous font gagner un temps précieux : nous recevons directement les profils les plus pertinents pour chaque offre.' },
     { nom: 'Youssef T.', role: 'Technicien anesthésiste, Sousse', texte: 'Une plateforme claire, spécialisée, et des recruteurs sérieux. Les entretiens se planifient en un clic.' },
   ];
+  const atouts = [
+    { icon: 'fa-file-medical', titre: 'CV structuré santé', texte: 'Diplômes, services, gestes maîtrisés : un CV pensé pour les métiers médicaux et paramédicaux.' },
+    { icon: 'fa-list-check', titre: 'Compétences validées par QCM', texte: 'Chaque compétence affichée est prouvée par un sans-faute chronométré.' },
+    { icon: 'fa-brain', titre: 'Test de personnalité', texte: 'Un Big Five adapté au milieu médical pour révéler votre savoir-être.' },
+    { icon: 'fa-microphone-lines', titre: 'Entretien IA', texte: 'Un entretien oral guidé qui évalue votre communication, à passer quand vous voulez.' },
+    { icon: 'fa-location-crosshairs', titre: 'Matching intelligent', texte: 'Compétences, diplôme, expérience et proximité : les meilleurs profils remontent en premier.' },
+    { icon: 'fa-calendar-check', titre: 'Entretiens planifiés', texte: 'Un calendrier intégré pour proposer et confirmer les rendez-vous en un clic.' },
+  ];
   return page(c, { title: 'Accueil', active: 'home' }, (
     <>
-      <section class="hero" aria-label="Infirmière dans un couloir d'hôpital">
+      <section class="hero" aria-label="Recherche d'emploi dans la santé">
         <div class="container">
           <div class="row align-items-center g-4 g-lg-5">
             <div class="col-lg-7 col-xl-6">
-              <span class="badge rounded-pill bg-light text-primary mb-3"><i class="fa-solid fa-heart-pulse me-1"></i>N°1 du recrutement paramédical en Tunisie</span>
-              <h1 class="display-5 fw-bold text-white">Les talents de la santé rencontrent les établissements qui les recherchent</h1>
-              <p class="lead text-white-50 mt-3">Infirmiers, sages-femmes, techniciens, kinésithérapeutes… Trouvez votre prochain poste ou recrutez les meilleurs profils en quelques clics.</p>
-              <form class="hero-search bg-white rounded-3 p-2 mt-4 d-flex flex-column flex-md-row gap-2" action="/offres">
-                <select name="poste" class="form-select border-0" aria-label="Poste"><Options items={POSTES} placeholder="Quel poste ?" /></select>
-                <select name="ville" class="form-select border-0" aria-label="Ville"><Options items={GOUVERNORATS} placeholder="Où ?" /></select>
-                <button class="btn btn-primary px-4"><i class="fa-solid fa-magnifying-glass me-1"></i>Rechercher</button>
+              <span class="eyebrow eyebrow-clair mb-3"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i>N°1 du recrutement paramédical en Tunisie</span>
+              <h1 class="hero-titre text-white">Les talents de la santé rencontrent les <span class="surligne">établissements</span> qui les recherchent</h1>
+              <p class="lead mt-3">Infirmiers, sages-femmes, techniciens, kinésithérapeutes… Trouvez votre prochain poste ou recrutez les meilleurs profils en quelques clics.</p>
+              <form class="hero-search mt-4" action="/offres" role="search">
+                <label class="hero-champ"><i class="fa-solid fa-user-nurse" aria-hidden="true"></i><span class="visually-hidden">Poste</span>
+                  <select name="poste" class="form-select"><Options items={POSTES} placeholder="Quel poste ?" /></select></label>
+                <label class="hero-champ"><i class="fa-solid fa-location-dot" aria-hidden="true"></i><span class="visually-hidden">Ville</span>
+                  <select name="ville" class="form-select"><Options items={GOUVERNORATS} placeholder="Où ?" /></select></label>
+                <button class="btn btn-primary btn-lg"><i class="fa-solid fa-magnifying-glass me-2" aria-hidden="true"></i>Rechercher</button>
               </form>
+              <ul class="hero-confiance list-unstyled mt-4 mb-0">
+                <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i>Inscription gratuite pour les candidats</li>
+                <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i>24 gouvernorats couverts</li>
+                <li><i class="fa-solid fa-circle-check" aria-hidden="true"></i>Compétences vérifiées</li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="container stats-bar">
-        <div class="row g-3 text-center">
-          <div class="col-4"><div class="stat"><strong data-count={stats?.offres ?? 0}>{stats?.offres ?? 0}</strong><span>offres actives</span></div></div>
-          <div class="col-4"><div class="stat"><strong data-count={stats?.candidats ?? 0}>{stats?.candidats ?? 0}</strong><span>professionnels inscrits</span></div></div>
-          <div class="col-4"><div class="stat"><strong data-count={stats?.recruteurs ?? 0}>{stats?.recruteurs ?? 0}</strong><span>établissements</span></div></div>
+      <section class="container stats-bar" aria-label="Chiffres clés">
+        <div class="stats-grille">
+          <div class="stat"><i class="fa-solid fa-briefcase-medical" aria-hidden="true"></i><div><strong data-count={stats?.offres ?? 0}>{stats?.offres ?? 0}</strong><span>offres actives</span></div></div>
+          <div class="stat"><i class="fa-solid fa-user-nurse" aria-hidden="true"></i><div><strong data-count={stats?.candidats ?? 0}>{stats?.candidats ?? 0}</strong><span>professionnels inscrits</span></div></div>
+          <div class="stat"><i class="fa-solid fa-hospital" aria-hidden="true"></i><div><strong data-count={stats?.recruteurs ?? 0}>{stats?.recruteurs ?? 0}</strong><span>établissements</span></div></div>
         </div>
       </section>
 
-      <section class="container py-5">
-        <div class="row align-items-center g-4 g-lg-5">
-          <div class="col-lg-6">
-            <h2 class="section-title">Une plateforme pensée pour la santé</h2>
-            <p class="text-muted">medicalstaff.tn met en relation les professionnels de santé avec les cliniques, hôpitaux, cabinets, laboratoires et centres spécialisés partout en Tunisie. Notre plateforme combine CV structuré, test de personnalité, matching intelligent et planification d'entretiens pour accélérer chaque recrutement.</p>
-            <ul class="list-unstyled check-list">
-              <li><i class="fa-solid fa-circle-check"></i>CV structuré adapté aux métiers paramédicaux</li>
-              <li><i class="fa-solid fa-circle-check"></i>Test de personnalité Big Five adapté au milieu médical</li>
-              <li><i class="fa-solid fa-circle-check"></i>Suggestions de profils par intelligence artificielle</li>
-              <li><i class="fa-solid fa-circle-check"></i>Calendrier d'entretiens intégré</li>
-            </ul>
-          </div>
-          <div class="col-lg-6">
-            <div class="row g-3">
-              {RUBRIQUES.map((rb) => (
-                <div class="col-12">
-                  <a class="rubrique card border-0 shadow-sm text-decoration-none" href={`/offres?${rb.q}`}>
-                    <div class="card-body d-flex align-items-center gap-3">
-                      <div class="icon-circle"><i class={`fa-solid ${rb.icon}`}></i></div>
-                      <div><h5 class="mb-1 text-dark">{rb.titre}</h5><p class="mb-0 text-muted small">{rb.texte}</p></div>
-                      <i class="fa-solid fa-chevron-right ms-auto text-primary"></i>
-                    </div>
-                  </a>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="bg-soft py-5">
+      <section class="section">
         <div class="container">
-          <h2 class="section-title text-center">Comment ça marche ?</h2>
-          <div class="row g-4 mt-2">
+          <div class="section-entete text-center mx-auto">
+            <span class="eyebrow">Comment ça marche ?</span>
+            <h2 class="section-title">Deux parcours, un même objectif : le bon soignant au bon poste</h2>
+          </div>
+          <div class="row g-4">
             <div class="col-lg-6">
-              <div class="card h-100 border-0 shadow-sm"><div class="card-body p-4">
-                <h4 class="text-primary"><i class="fa-solid fa-user-nurse me-2"></i>Vous êtes candidat</h4>
-                <ol class="steps">
+              <div class="parcours parcours-candidat h-100">
+                <div class="parcours-icone"><i class="fa-solid fa-user-nurse" aria-hidden="true"></i></div>
+                <h3>Vous êtes candidat</h3>
+                <ol class="etapes">
                   <li><strong>Créez votre compte</strong> gratuitement en 1 minute.</li>
                   <li><strong>Déposez votre CV</strong> : diplômes, expériences, compétences, langues.</li>
                   <li><strong>Passez le test de personnalité</strong> pour mettre en valeur votre profil.</li>
                   <li><strong>Postulez</strong> aux offres et gérez vos entretiens depuis votre espace.</li>
                 </ol>
-                <a href="/candidat/register" class="btn btn-primary">Je crée mon CV</a>
-              </div></div>
+                <a href="/candidat/register" class="btn btn-primary btn-lg">Je crée mon CV <i class="fa-solid fa-arrow-right ms-1" aria-hidden="true"></i></a>
+              </div>
             </div>
             <div class="col-lg-6">
-              <div class="card h-100 border-0 shadow-sm"><div class="card-body p-4">
-                <h4 class="text-teal"><i class="fa-solid fa-hospital me-2"></i>Vous êtes un établissement</h4>
-                <ol class="steps">
+              <div class="parcours parcours-etablissement h-100">
+                <div class="parcours-icone"><i class="fa-solid fa-hospital" aria-hidden="true"></i></div>
+                <h3>Vous êtes un établissement</h3>
+                <ol class="etapes">
                   <li><strong>Inscrivez votre établissement</strong> et son responsable.</li>
                   <li><strong>Activez votre abonnement</strong> annuel ({prix} TND).</li>
                   <li><strong>Publiez vos offres</strong> et explorez la CVthèque.</li>
                   <li><strong>Laissez l'IA vous suggérer</strong> les meilleurs profils et planifiez vos entretiens.</li>
                 </ol>
-                <a href="/recruteur/register" class="btn btn-teal">Je recrute</a>
-              </div></div>
+                <a href="/recruteur/register" class="btn btn-light btn-lg">Je recrute <i class="fa-solid fa-arrow-right ms-1" aria-hidden="true"></i></a>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {dernieres.length > 0 && (
-        <section class="container py-5">
-          <div class="d-flex justify-content-between align-items-end mb-3">
-            <h2 class="section-title mb-0">Dernières offres</h2>
-            <a href="/offres">Toutes les offres <i class="fa-solid fa-arrow-right"></i></a>
+      <section class="section bg-soft">
+        <div class="container">
+          <div class="row g-4 g-lg-5 align-items-end mb-4">
+            <div class="col-lg-6">
+              <span class="eyebrow">Une plateforme pensée pour la santé</span>
+              <h2 class="section-title mb-0">Tout ce qu'il faut pour recruter vite et bien</h2>
+            </div>
+            <div class="col-lg-6">
+              <p class="text-muted mb-0">medicalstaff.tn met en relation les professionnels de santé avec les cliniques, hôpitaux, cabinets, laboratoires et centres spécialisés partout en Tunisie. Notre plateforme combine CV structuré, test de personnalité, matching intelligent et planification d'entretiens pour accélérer chaque recrutement.</p>
+            </div>
           </div>
-          <div class="row g-3">
-            {dernieres.map((o) => (
-              <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm offer-card"><div class="card-body">
-                  <span class="badge bg-primary-subtle text-primary mb-2">{o.type_contrat}</span>
-                  <h5 class="card-title">{o.titre}</h5>
-                  <p class="text-muted small mb-1"><i class="fa-solid fa-hospital me-1"></i>{o.nom_etablissement}</p>
-                  <p class="text-muted small"><i class="fa-solid fa-location-dot me-1"></i>{o.ville}</p>
-                  <p class="small mb-0">{excerpt(o.description, 110)}</p>
+          <div class="row g-3 g-lg-4">
+            {atouts.map((a) => (
+              <div class="col-sm-6 col-lg-4">
+                <div class="card atout h-100"><div class="card-body">
+                  <div class="icon-circle mb-3"><i class={`fa-solid ${a.icon}`} aria-hidden="true"></i></div>
+                  <h3 class="h6 mb-2">{a.titre}</h3>
+                  <p class="small text-muted mb-0">{a.texte}</p>
                 </div></div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-entete">
+            <span class="eyebrow">Explorer par profil</span>
+            <h2 class="section-title">Les métiers les plus recherchés</h2>
+          </div>
+          <div class="row g-3 g-lg-4">
+            {RUBRIQUES.map((rb) => (
+              <div class="col-md-4">
+                <a class="rubrique card h-100 text-decoration-none" href={`/offres?${rb.q}`}>
+                  <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                      <div class="icon-circle"><i class={`fa-solid ${rb.icon}`} aria-hidden="true"></i></div>
+                      <span class="rubrique-fleche" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
+                    </div>
+                    <h3 class="h5 mb-1 text-dark">{rb.titre}</h3>
+                    <p class="mb-0 text-muted small">{rb.texte}</p>
+                  </div>
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {dernieres.length > 0 && (
+        <section class="section pt-0">
+          <div class="container">
+            <div class="section-entete d-flex flex-wrap justify-content-between align-items-end gap-2">
+              <div><span class="eyebrow">Recrutements en cours</span><h2 class="section-title mb-0">Dernières offres</h2></div>
+              <a class="lien-fleche" href="/offres">Toutes les offres <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </div>
+            <div class="row g-3 g-lg-4">
+              {dernieres.map((o) => (
+                <div class="col-md-4">
+                  <a class="card h-100 offer-card offre-mini text-decoration-none" href={`/offres#offre-${o.id}`}><div class="card-body">
+                    <span class="badge bg-primary-subtle text-primary mb-3">{o.type_contrat}</span>
+                    <h3 class="h6 text-dark mb-2">{o.titre}</h3>
+                    <p class="text-muted small mb-1"><i class="fa-solid fa-hospital me-2" aria-hidden="true"></i>{o.nom_etablissement}</p>
+                    <p class="text-muted small mb-3"><i class="fa-solid fa-location-dot me-2" aria-hidden="true"></i>{o.ville}</p>
+                    <p class="small mb-0 text-body">{excerpt(o.description, 110)}</p>
+                  </div></a>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
       {articles.length > 0 && (
-        <section class="bg-soft py-5">
+        <section class="section bg-soft">
           <div class="container">
-            <div class="d-flex justify-content-between align-items-end mb-3">
-              <h2 class="section-title mb-0">Conseils et actualités</h2>
-              <a href="/blog">Tous les articles <i class="fa-solid fa-arrow-right"></i></a>
+            <div class="section-entete d-flex flex-wrap justify-content-between align-items-end gap-2">
+              <div><span class="eyebrow">Le blog</span><h2 class="section-title mb-0">Conseils et actualités</h2></div>
+              <a class="lien-fleche" href="/blog">Tous les articles <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
             </div>
             <div class="row g-4">{articles.map((x) => <div class="col-md-4"><CarteArticle a={x} /></div>)}</div>
           </div>
         </section>
       )}
 
-      <section class="container py-5">
-        <h2 class="section-title text-center">Ils nous font confiance</h2>
-        <div class="row g-4 mt-2">
-          {temoignages.map((t) => (
-            <div class="col-md-4">
-              <div class="card h-100 border-0 shadow-sm testimonial"><div class="card-body p-4">
-                <i class="fa-solid fa-quote-left fa-2x text-primary opacity-25"></i>
-                <p class="mt-2">{t.texte}</p>
-                <div class="d-flex align-items-center gap-2 mt-3">
-                  <div class="avatar-initials">{t.nom.slice(0, 1)}</div>
-                  <div><strong>{t.nom}</strong><br /><small class="text-muted">{t.role}</small></div>
-                </div>
-              </div></div>
-            </div>
-          ))}
+      <section class="section">
+        <div class="container">
+          <div class="section-entete text-center mx-auto">
+            <span class="eyebrow">Témoignages</span>
+            <h2 class="section-title">Ils nous font confiance</h2>
+          </div>
+          <div class="row g-4">
+            {temoignages.map((t) => (
+              <div class="col-md-4">
+                <figure class="card h-100 testimonial m-0"><div class="card-body">
+                  <div class="etoiles mb-3" aria-label="5 étoiles sur 5">{[1, 2, 3, 4, 5].map(() => <i class="fa-solid fa-star" aria-hidden="true"></i>)}</div>
+                  <blockquote class="mb-0"><p>« {t.texte} »</p></blockquote>
+                  <figcaption class="d-flex align-items-center gap-3 mt-4">
+                    <div class="avatar-initials" aria-hidden="true">{t.nom.replace(/^Dr\.\s*/, '').slice(0, 1)}</div>
+                    <div><strong>{t.nom}</strong><br /><small class="text-muted">{t.role}</small></div>
+                  </figcaption>
+                </div></figure>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section class="container pb-2">
+        <div class="cta-final">
+          <div>
+            <h2 class="h3 text-white mb-2">Prêt(e) à donner un nouvel élan à votre carrière ?</h2>
+            <p class="mb-0">Créez votre profil en une minute ou publiez votre première offre dès aujourd'hui.</p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="/candidat/register" class="btn btn-light btn-lg">Créer mon compte</a>
+            <a href="/recruteur/register" class="btn btn-outline-light btn-lg">Inscrire mon établissement</a>
+          </div>
         </div>
       </section>
     </>

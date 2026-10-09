@@ -8,13 +8,13 @@ function Nav({ c, active }: { c: Ctx; active?: string }) {
   const u = c.get('user');
   const cls = (k: string) => 'nav-link' + (k === active ? ' active' : '');
   return (
-    <nav class="navbar navbar-expand-xl navbar-light bg-white shadow-sm sticky-top flex-column p-0">
+    <nav class="navbar navbar-expand-xl navbar-light sticky-top flex-column p-0 site-nav" aria-label="Navigation principale">
       <div class="brand-band w-100" aria-hidden="true"></div>
       <div class="container py-2">
         <a class="navbar-brand py-0" href="/" aria-label="medicalstaff.tn – accueil">
           <img src="/assets/img/logo-entete.svg" alt="medicalstaff.tn" width="190" height="42" />
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-label="Menu">
+        <button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Ouvrir le menu">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="mainNav">
@@ -118,12 +118,15 @@ export function Layout({ c, title, active, head, scripts, children }: PageOpts &
           <link href="/assets/vendor/bootstrap/bootstrap.min.css" rel="stylesheet" />
           <link href="/assets/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
           <link href="/assets/vendor/poppins/poppins.css" rel="stylesheet" />
+          <link href="/assets/vendor/inter/inter.css" rel="stylesheet" />
+          <link rel="preload" href="/assets/vendor/inter/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin="" />
           <link href="/assets/css/style.css" rel="stylesheet" />
           {head}
         </head>
         <body data-base="/">
+          <a class="lien-evitement" href="#contenu">Aller au contenu</a>
           <Nav c={c} active={active} />
-          <main>
+          <main id="contenu" tabindex={-1}>
             {flashes.length > 0 && (
               <div class="container mt-3">
                 {flashes.map((f) => (
@@ -136,7 +139,7 @@ export function Layout({ c, title, active, head, scripts, children }: PageOpts &
             )}
             {children}
           </main>
-          <Footer />
+          <Footer connecte={!!c.get('user')} />
           <script src="/assets/vendor/bootstrap/bootstrap.bundle.min.js"></script>
           <script src="/assets/js/app.js"></script>
           <script src="/assets/js/chatbot.js"></script>
@@ -147,40 +150,46 @@ export function Layout({ c, title, active, head, scripts, children }: PageOpts &
   );
 }
 
-function Footer() {
+function Footer({ connecte }: { connecte: boolean }) {
   return (
     <>
-      <footer class="site-footer mt-5">
-        <div class="container py-5">
-          <div class="row g-4">
-            <div class="col-md-4">
+      <footer class="site-footer">
+        <div class="brand-band" aria-hidden="true"></div>
+        <div class="container pt-5 pb-4">
+          <div class="row g-4 g-lg-5">
+            <div class="col-lg-4">
               <img src="/assets/img/logo-fond-sombre.svg" alt="medicalstaff.tn – Recrutement paramédical · Tunisie" class="footer-logo mb-3" width="200" height="44" />
-              <p class="small">La plateforme tunisienne de recrutement dédiée aux professionnels de santé médicaux et paramédicaux.</p>
+              <p class="small mb-3">La plateforme tunisienne de recrutement dédiée aux professionnels de santé médicaux et paramédicaux.</p>
+              {!connecte && <a href="/candidat/register" class="btn btn-primary btn-sm">Créer mon compte gratuit</a>}
             </div>
-            <div class="col-6 col-md-2">
-              <h6 class="text-white">Plateforme</h6>
-              <ul class="list-unstyled small">
+            <div class="col-6 col-md-4 col-lg-2">
+              <h2 class="footer-titre">Plateforme</h2>
+              <ul class="list-unstyled small footer-liens">
                 <li><a href="/mission">Notre mission</a></li>
                 <li><a href="/offres">Offres d'emploi</a></li>
                 <li><a href="/demandes">Demandes d'emploi</a></li>
                 <li><a href="/blog">Blog</a></li>
               </ul>
             </div>
-            <div class="col-6 col-md-3">
-              <h6 class="text-white">Espaces</h6>
-              <ul class="list-unstyled small">
+            <div class="col-6 col-md-4 col-lg-3">
+              <h2 class="footer-titre">Espaces</h2>
+              <ul class="list-unstyled small footer-liens">
                 <li><a href="/candidat/register">Je suis candidat</a></li>
+                <li><a href="/candidat/login">Connexion candidat</a></li>
                 <li><a href="/recruteur/register">Je suis un établissement</a></li>
+                <li><a href="/recruteur/login">Connexion établissement</a></li>
               </ul>
             </div>
-            <div class="col-md-3">
-              <h6 class="text-white">Contact</h6>
-              <p class="small mb-1"><i class="fa-solid fa-location-dot me-2"></i>Tunis, Tunisie</p>
-              <p class="small mb-1"><i class="fa-solid fa-envelope me-2"></i>contact@medicalstaff.tn</p>
+            <div class="col-md-4 col-lg-3">
+              <h2 class="footer-titre">Contact</h2>
+              <p class="small mb-2"><i class="fa-solid fa-location-dot me-2" aria-hidden="true"></i>Tunis, Tunisie</p>
+              <p class="small mb-0"><i class="fa-solid fa-envelope me-2" aria-hidden="true"></i><a href="mailto:contact@medicalstaff.tn">contact@medicalstaff.tn</a></p>
             </div>
           </div>
-          <hr class="border-secondary" />
-          <p class="small text-center mb-0">© {new Date().getFullYear()} medicalstaff.tn – Tous droits réservés · <a href="/admin/login">Administration</a></p>
+          <div class="footer-bas">
+            <p class="small mb-0">© {new Date().getFullYear()} medicalstaff.tn – Tous droits réservés</p>
+            <a class="small" href="/admin/login">Administration</a>
+          </div>
         </div>
       </footer>
       <div id="chatbot" class="chatbot">
