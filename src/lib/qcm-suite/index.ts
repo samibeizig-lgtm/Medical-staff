@@ -12,10 +12,11 @@ import { SUITE_REEDUCATION } from './reeducation';
 import { SUITE_AIDE } from './aide';
 import { SUITE_ACCUEIL } from './accueil';
 import { SUITE_SPECIALITES } from './specialites';
+import { SUITE_BIOMEDICAL } from './biomedical';
 
 const sources: Record<string, QuestionBrute[]>[] = [
   SUITE_TRONC, SUITE_INFIRMIER, SUITE_BLOC, SUITE_SAGEFEMME, SUITE_ANESTHESIE, SUITE_IMAGERIE, SUITE_LABORATOIRE,
-  SUITE_PHARMACIE, SUITE_REEDUCATION, SUITE_AIDE, SUITE_ACCUEIL, SUITE_SPECIALITES,
+  SUITE_PHARMACIE, SUITE_REEDUCATION, SUITE_AIDE, SUITE_ACCUEIL, SUITE_SPECIALITES, SUITE_BIOMEDICAL,
 ];
 export const SUITE: Record<string, QuestionBrute[]> = {};
 for (const s of sources) for (const [k, v] of Object.entries(s)) (SUITE[k] ??= []).push(...v);

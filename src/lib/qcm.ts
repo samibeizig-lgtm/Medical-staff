@@ -39,6 +39,7 @@ export function familleQcm(poste: string | null | undefined): FamilleQcm {
     : p.includes('anesthesie') ? 'anesthesie'
     : p.includes('sterilisation') ? 'sterilisation'
     : p.includes('panseu') ? 'panseur'
+    : p.includes('biomedical') ? 'biomedical'
     : p.includes('pma') ? 'pma'
     : p.includes('pediatrie') ? 'pediatrie'
     : /bloc|instrumentation|hygiene hospitaliere/.test(p) ? 'bloc'

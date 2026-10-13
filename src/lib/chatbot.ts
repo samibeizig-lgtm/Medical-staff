@@ -49,11 +49,8 @@ const METIERS: [RegExp, string, (p: string) => boolean][] = [
   [/\bsurveillant\w*.*\bgenera/, 'surveillant(e) général(e)', (p) => p.includes('surveillant') && p.includes('general')],
   [/\bsurveillant\w*.*\betage/, "surveillant(e) d'étage", (p) => p.includes('surveillant') && p.includes('etage')],
   [/\bsurveillant/, 'surveillant(e)', (p) => p.includes('surveillant')],
-  [/\binfirmi\w*.*\burgence|\burgentiste/, 'infirmier(ère) aux urgences', (p) => p.includes('urgences')],
-  [/\binfirmi\w*.*\bbloc|\bibode\b/, 'infirmier(ère) de bloc', (p) => p.includes('bloc operatoire') && p.includes('infirmier')],
-  [/\binfirmi\w*.*\breanimation/, 'infirmier(ère) en réanimation', (p) => p.includes('infirmier') && p.includes('reanimation')],
-  [/\binfirmi\w*.*\bpediatr/, 'infirmier(ère) en pédiatrie', (p) => p.includes('infirmier') && p.includes('pediatrie')],
-  [/\binfirmi|\bide\b/, 'infirmier(ère)', (p) => p.startsWith('infirmier')],
+  [/\binfirmi|\bide\b|\bibode\b|\burgentiste/, 'infirmier(ère)', (p) => p.startsWith('infirmier')],
+  [/\bbiomedic|\bingenieur\w* biomed|\bmaintenance (biomedicale|des equipements)/, 'technicien(ne) biomédical(e)', (p) => p.includes('biomedical')],
   [/\btechnicien\w* (en |de )?pediatr|\bpediatrie\b/, 'technicien(ne) en pédiatrie', (p) => p.startsWith('technicien') && p.includes('pediatrie')],
   [/\bpanseu/, 'panseur(se)', (p) => p.includes('panseu')],
   [/\bsages? ?femmes?\b|\bmaieuti/, 'sage-femme', (p) => p.includes('sage femme')],
@@ -188,7 +185,7 @@ const GRILLE: [RegExp, string][] = [
   [/sage femme/, '1 000 à 1 800 TND'],
   [/anesthesie/, '1 200 à 2 200 TND'],
   [/kinesitherapeute/, '1 000 à 2 000 TND'],
-  [/imagerie|laboratoire|instrumentation|hygiene/, '900 à 1 700 TND'],
+  [/imagerie|laboratoire|biomedical|instrumentation|hygiene/, '900 à 1 700 TND'],
   [/aide soignant|auxiliaire|secretaire|ambulancier|assistant/, '600 à 1 100 TND'],
 ];
 

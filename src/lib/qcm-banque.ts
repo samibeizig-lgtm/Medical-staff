@@ -565,6 +565,10 @@ const QUALITE: CompetenceQcm = {
   ],
 };
 
+/* Technicien biomédical : questions dans qcm-suite/biomedical.ts */
+const MAINTENANCE_BIO: CompetenceQcm = { nom: 'Maintenance des équipements biomédicaux', questions: [] };
+const SECURITE_BIO: CompetenceQcm = { nom: 'Sécurité électrique et matériovigilance', questions: [] };
+
 const comp = (nom: string): CompetenceQcm => {
   const c = FAMILLES_BASE.flatMap((f) => f.competences).find((x) => x.nom === nom);
   if (!c) throw new Error(`Compétence inconnue : ${nom}`);
@@ -580,6 +584,7 @@ export const FAMILLES_QCM: readonly FamilleQcm[] = [
   { cle: 'panseur', label: 'Panseur(se)', competences: [comp('Pansements et soins des plaies'), comp('Prévention des escarres')] },
   { cle: 'encadrement', label: 'Encadrement des soins', competences: [ENCADREMENT, QUALITE, comp('Préparation et administration des médicaments'), comp('Surveillance des paramètres vitaux')] },
   { cle: 'encadrement_bloc', label: 'Encadrement du bloc opératoire', competences: [ENCADREMENT, QUALITE, comp('Bloc opératoire'), comp('Asepsie et stérilisation')] },
+  { cle: 'biomedical', label: 'Biomédical', competences: [MAINTENANCE_BIO, SECURITE_BIO] },
   { cle: 'encadrement_radio', label: "Encadrement de l'imagerie", competences: [ENCADREMENT, QUALITE, comp('Radioprotection'), comp('Scanner et IRM')] },
 ];
 

@@ -51,8 +51,8 @@ recs.forEach((r, i) => {
 const offres: [number, string, string, string, string, number, number, string, number, string][] = [
   [recIds[0], 'Sage-femme', 'CDI', 'Notre maternité recherche une sage-femme pour renforcer son équipe (salle de naissance et suites de couches). Gardes rémunérées, transport assuré.', 'Sousse', 1200, 1700, 'Licence en sciences obstétricales (sage-femme)', 2, 'Accouchement eutocique, Suivi de grossesse, Soins néonataux, Allaitement maternel'],
   [recIds[0], 'Technicien(ne) supérieur(e) en anesthésie-réanimation', 'CDI', "Bloc opératoire multidisciplinaire (6 salles). Vous assurez la préparation et la surveillance de l'anesthésie en collaboration avec les médecins anesthésistes.", 'Sousse', 1500, 2200, 'Licence en anesthésie-réanimation', 3, 'Anesthésie générale, Intubation et ventilation, Monitorage hémodynamique, Surveillance post-interventionnelle'],
-  [recIds[0], 'Infirmier(ère) polyvalent(e)', 'CDD', 'Poste en service de médecine/chirurgie. Jeunes diplômés bienvenus, accompagnement par un tuteur pendant 3 mois.', 'Monastir', 1000, 1300, 'Licence en sciences infirmières', 0, 'Pose de perfusion, Prélèvements sanguins, Préparation et administration des médicaments, Hygiène et prévention des infections'],
-  [recIds[1], 'Infirmier(ère) aux urgences', 'CDI', "Service d'urgences 24h/24. Nous recherchons un(e) infirmier(ère) réactif(ve), à l'aise avec le triage et les gestes d'urgence.", 'Tunis', 1300, 1900, 'Licence en sciences infirmières', 2, "Gestes d'urgence, Surveillance des paramètres vitaux, Pose de perfusion, Sécurité du patient"],
+  [recIds[0], 'Infirmier(ère)', 'CDD', 'Poste en service de médecine/chirurgie. Jeunes diplômés bienvenus, accompagnement par un tuteur pendant 3 mois.', 'Monastir', 1000, 1300, 'Licence en sciences infirmières', 0, 'Pose de perfusion, Prélèvements sanguins, Préparation et administration des médicaments, Hygiène et prévention des infections'],
+  [recIds[1], 'Infirmier(ère)', 'CDI', "Service d'urgences 24h/24. Nous recherchons un(e) infirmier(ère) réactif(ve), à l'aise avec le triage et les gestes d'urgence.", 'Tunis', 1300, 1900, 'Licence en sciences infirmières', 2, "Gestes d'urgence, Surveillance des paramètres vitaux, Pose de perfusion, Sécurité du patient"],
   [recIds[1], 'Technicien(ne) de laboratoire / biologie médicale', 'Stage', "Stage de 6 mois au sein de notre laboratoire d'analyses. Possibilité d'embauche.", 'Tunis', 500, 700, 'Licence en biologie médicale / analyses', 0, 'Phase pré-analytique, Analyses biochimiques, Hématologie, Microbiologie'],
 ];
 offres.forEach((o, i) => {
@@ -75,11 +75,11 @@ const cands: Cand[] = [
     dips: [['Licence en sciences obstétricales (sage-femme)', 'ESSTS Monastir', '2023-07-01', 'Assez bien']],
     exps: [['Sage-femme stagiaire', 'CHU Farhat Hached', '2023-01-01', '2023-06-30', 0, "Stage de fin d'études."]],
     comps: ['Accouchement eutocique', 'Soins néonataux'], test: [4, 4, 4, 5, 3, 4] },
-  { email: 'mehdi@demo.tn', nom: 'Jlassi', prenom: 'Mehdi', poste: 'Infirmier(ère) aux urgences', ville: 'Tunis', sal: 1600, dispo: 'Sous 15 jours', ago: 33,
+  { email: 'mehdi@demo.tn', nom: 'Jlassi', prenom: 'Mehdi', poste: 'Infirmier(ère)', ville: 'Tunis', sal: 1600, dispo: 'Sous 15 jours', ago: 33,
     dips: [['Licence en sciences infirmières', 'ISSTS Tunis', '2017-07-01', 'Bien']],
     exps: [['Infirmier urgentiste', 'Hôpital Charles Nicolle', '2017-09-01', null, 1, "Accueil, triage et soins d'urgence."]],
     comps: ["Gestes d'urgence", 'Surveillance des paramètres vitaux', 'Pose de perfusion', 'Sécurité du patient'], test: [3, 4, 5, 3, 5, 4] },
-  { email: 'ines@demo.tn', nom: 'Hammami', prenom: 'Inès', poste: 'Infirmier(ère) polyvalent(e)', ville: 'Monastir', sal: 1000, dispo: 'Immédiate', ago: 3,
+  { email: 'ines@demo.tn', nom: 'Hammami', prenom: 'Inès', poste: 'Infirmier(ère)', ville: 'Monastir', sal: 1000, dispo: 'Immédiate', ago: 3,
     dips: [['Licence en sciences infirmières', 'ISSTS Monastir', '2024-07-01', 'Très bien']], exps: [],
     comps: ['Prélèvements sanguins', 'Hygiène et prévention des infections'], test: null },
 ];

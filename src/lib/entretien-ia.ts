@@ -235,7 +235,7 @@ export function familleDuPoste(poste: string | null | undefined): string {
   if (p.includes('sage femme')) return 'sagefemme';
   if (p.includes('anesthesie')) return 'anesthesie';
   if (p.includes('infirmier')) return 'infirmier';
-  if (/imagerie|laboratoire|biologie|hygiene|instrumentation|sterilisation|pharmacie/.test(p)) return 'technique';
+  if (/imagerie|laboratoire|biologie|biomedical|hygiene|instrumentation|sterilisation|pharmacie/.test(p)) return 'technique';
   if (/kinesitherapeute|dieteticien/.test(p)) return 'reeducation';
   if (/aide soignant|auxiliaire/.test(p)) return 'aide';
   if (/secretaire|ambulancier|assistant/.test(p)) return 'accueil';

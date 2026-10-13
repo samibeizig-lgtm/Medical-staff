@@ -28,11 +28,7 @@ export const GOUVERNORATS: readonly string[] = [
 ];
 
 export const POSTES: readonly string[] = [
-  "Infirmier(ère) polyvalent(e)",
-  "Infirmier(ère) de bloc opératoire",
-  "Infirmier(ère) en réanimation",
-  "Infirmier(ère) aux urgences",
-  "Infirmier(ère) en pédiatrie",
+  "Infirmier(ère)",
   "Technicien(ne) en pédiatrie",
   "Panseur(se)",
   "Sage-femme",
@@ -40,6 +36,7 @@ export const POSTES: readonly string[] = [
   "Technicien(ne) en imagerie médicale (radiologie)",
   "Technicien(ne) de laboratoire / biologie médicale",
   "Technicien(ne) de laboratoire PMA",
+  "Technicien(ne) biomédical(e)",
   "Kinésithérapeute",
   "Diététicien(ne) / Nutritionniste",
   "Préparateur(trice) en pharmacie",
