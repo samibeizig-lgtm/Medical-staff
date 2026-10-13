@@ -11,7 +11,8 @@ import { DIPLOMES, DISPONIBILITES, GOUVERNORATS, LANGUES, MENTIONS, NIVEAUX_LANG
 import { esc, intOrNull, isEmail, money, refCandidat } from '../lib/format';
 import { dateFr, isValidDate, plageHoraire, parseLocal, tunis } from '../lib/dates';
 import { sendMail } from '../lib/mail';
-import { ECHELLE, QUESTIONS, personalityPortrait, personalityScores } from '../lib/personality';
+import { ECHELLE, personalityPortrait, personalityScores, questionsTest } from '../lib/personality';
+import { familleQcm } from '../lib/qcm';
 import { cleanQuery, searchOffres } from '../lib/offres';
 import { distanceKm, gouvernoratsDansRayon, rayonValide, RAYONS } from '../lib/proximite';
 import { randomHex } from '../lib/crypto';
@@ -441,6 +442,9 @@ r.on(['GET', 'POST'], '/test', async (c) => {
   const m = await me(c);
   let error: string | null = null;
   let answers: number[] = [];
+  // Métiers techniques non soignants (technicien biomédical) : version du test sans questions de soin
+  const technique = !!familleQcm(m.poste_recherche).sansTronc;
+  const QUESTIONS = questionsTest(technique);
   if (c.req.method === 'POST') {
     const fd = await readForm(c);
     answers = QUESTIONS.map((_, i) => Number(fd.get(`q[${i}]`)));
@@ -454,7 +458,7 @@ r.on(['GET', 'POST'], '/test', async (c) => {
          ON CONFLICT(candidat_id) DO UPDATE SET ouverture=excluded.ouverture, conscience=excluded.conscience, extraversion=excluded.extraversion,
            agreabilite=excluded.agreabilite, stabilite=excluded.stabilite, adaptation_medicale=excluded.adaptation_medicale,
            portrait=excluded.portrait, reponses=excluded.reponses, created_at=excluded.created_at`,
-        m.id, s.ouverture, s.conscience, s.extraversion, s.agreabilite, s.stabilite, s.adaptation_medicale, personalityPortrait(s, m.prenom), JSON.stringify(answers));
+        m.id, s.ouverture, s.conscience, s.extraversion, s.agreabilite, s.stabilite, s.adaptation_medicale, personalityPortrait(s, m.prenom, technique), JSON.stringify(answers));
       flash(c, 'success', 'Votre test de personnalité a été enregistré.');
       return redirect(c, '/candidat/test');
     }
