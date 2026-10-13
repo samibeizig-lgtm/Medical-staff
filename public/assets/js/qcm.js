@@ -2,12 +2,18 @@
 (function () {
   'use strict';
   const form = document.getElementById('qcm-form');
+  const arret = document.getElementById('qcm-arret');
+  let envoye = false;
+  // Arrêt volontaire : confirmation, puis plus aucun envoi automatique de la question en cours
+  if (arret) arret.addEventListener('submit', (e) => {
+    if (envoye || !confirm('Arrêter le QCM maintenant ?\n\nLes compétences déjà réussies à 3/3 seront validées, les questions restantes comptées fausses. Ce QCM compte dans la limite hebdomadaire.')) { e.preventDefault(); return; }
+    envoye = true;
+  });
   if (!form) return;
   const total = Number(form.dataset.total) || 30;
   const fin = Date.now() + (Number(form.dataset.restant) || total) * 1000;
   const chrono = form.querySelector('[data-chrono]');
   const barre = form.querySelector('[data-barre]');
-  let envoye = false;
   function envoyer() {
     if (envoye) return;
     envoye = true;

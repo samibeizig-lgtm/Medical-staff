@@ -638,3 +638,6 @@ textarea.form-control { min-height: 0; }
 .auth-card .btn.w-100 { min-height: 50px; }
 main:has(> .auth-zone:last-child) + .site-footer { margin-top: 0; }
 @media (max-width: 575px) { .auth-zone { padding: 32px 0; } }
+
+/* Boutons alignés à gauche (choix du QCM, listes) : annule le centrage des boutons flex */
+.btn.text-start { justify-content: flex-start; text-align: left; }

@@ -68,6 +68,14 @@ async function finaliser(c: Ctx, s: Row): Promise<ResultatCompetence[]> {
   return res;
 }
 
+const ArretQcm = ({ csrf }: { csrf: string }) => (
+  <form method="post" action={`${BASE}/arreter`} id="qcm-arret" class="text-center mt-3">
+    <Csrf token={csrf} />
+    <button class="btn btn-outline-danger btn-sm"><i class="fa-solid fa-circle-stop me-1"></i>Arrêter le QCM</button>
+    <p class="small text-muted mt-2 mb-0">Les compétences déjà réussies à 3/3 sont validées ; les questions restantes sont comptées fausses.</p>
+  </form>
+);
+
 function ResultatsQcm({ s }: { s: Row }) {
   const res = parse<ResultatCompetence[]>(s.resultats, []);
   const ok = res.filter((x) => x.validee).length;
@@ -124,7 +132,7 @@ r.get('/', async (c) => {
     );
     if (!s.question_debut) {
       // Pause : la question précédente a expiré pendant une absence
-      return page(c, { title: 'QCM de compétences' }, (
+      return page(c, { title: 'QCM de compétences', scripts: <script src="/assets/js/qcm.js"></script> }, (
         <div class="container py-4"><div class="row justify-content-center"><div class="col-lg-8">
           {entete}
           <div class="card border-0 shadow-sm"><div class="card-body p-4 text-center">
@@ -133,9 +141,7 @@ r.get('/', async (c) => {
             <form method="post" action={`${BASE}/afficher`}><Csrf token={csrf} /><input type="hidden" name="index" value={i} />
               <button class="btn btn-primary btn-lg"><i class="fa-solid fa-play me-2"></i>Afficher la question {i + 1}</button></form>
           </div></div>
-          <form method="post" action={`${BASE}/abandonner`} class="text-end mt-3" onsubmit="return confirm('Abandonner ce QCM ? Il sera compté dans la limite hebdomadaire.')">
-            <Csrf token={csrf} /><button class="btn btn-link btn-sm text-muted">Abandonner le QCM</button>
-          </form>
+          <ArretQcm csrf={csrf} />
         </div></div></div>
       ));
     }
@@ -168,6 +174,7 @@ r.get('/', async (c) => {
             </div>
           </div>
         </form>
+        <ArretQcm csrf={csrf} />
       </div></div></div>
     ));
   }
@@ -278,12 +285,19 @@ r.post('/repondre', async (c) => {
   return redirect(c, BASE);
 });
 
-r.post('/abandonner', async (c) => {
+/* Arrêt volontaire : le QCM est clôturé avec les réponses déjà données (les questions restantes
+   sont comptées fausses) ; il reste compté dans la limite hebdomadaire. */
+r.post('/arreter', async (c) => {
   const m = await me(c);
-  // Le QCM abandonné reste compté dans la limite hebdomadaire
-  await run(c.env.DB, "UPDATE qcm_sessions SET statut = 'abandonne', question_debut = NULL WHERE candidat_id = ? AND statut = 'en_cours'", m.id);
-  flash(c, 'info', 'QCM abandonné.');
+  const s = await enCours(c, m.id);
+  if (s) {
+    const res = await finaliser(c, s);
+    const ok = res.filter((x) => x.validee).length;
+    flash(c, 'info', `QCM arrêté. ${ok ? `${ok} compétence(s) validée(s).` : 'Aucune compétence validée cette fois-ci.'}`);
+  }
   return redirect(c, BASE);
 });
+// Ancienne adresse (formulaires déjà ouverts au moment du déploiement)
+r.post('/abandonner', (c) => c.redirect(`${BASE}/arreter`, 307));
 
 export default r;
