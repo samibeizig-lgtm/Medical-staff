@@ -79,10 +79,11 @@ const trouver = (nom: string) => [TRONC_COMMUN, ...FAMILLES_QCM].flatMap((f) => 
  * puis le tronc commun), complétées si besoin par des compétences déjà validées (révision).
  */
 function choisirCompetences(famille: FamilleQcm, dejaValidees: Set<string>): string[] {
-  const metier = famille.competences.map((c) => c.nom), tronc = TRONC_COMMUN.competences.map((c) => c.nom);
+  const metier = famille.competences.map((c) => c.nom);
+  const tronc = famille.sansTronc ? [] : TRONC_COMMUN.competences.map((c) => c.nom);
   const non = (l: string[]) => melanger(l.filter((x) => !dejaValidees.has(x)));
   const oui = (l: string[]) => melanger(l.filter((x) => dejaValidees.has(x)));
-  const choix = [...non(metier).slice(0, MAX_COMPETENCES_METIER), ...non(tronc)].slice(0, COMPETENCES_PAR_SESSION);
+  const choix = [...non(metier).slice(0, famille.sansTronc ? COMPETENCES_PAR_SESSION : MAX_COMPETENCES_METIER), ...non(tronc)].slice(0, COMPETENCES_PAR_SESSION);
   for (const x of [...oui(metier), ...oui(tronc), ...non(metier)]) {
     if (choix.length >= COMPETENCES_PAR_SESSION) break;
     if (!choix.includes(x)) choix.push(x);

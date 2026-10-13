@@ -71,7 +71,7 @@ const nIa = GENERALES.length + Object.values(PAR_FAMILLE).flat().length;
 
 const annexe = `<h2 id="annexe">Annexe – Correspondance poste → questions</h2>
 <table class="annexe"><thead><tr><th>Poste</th><th>Entretien IA (questions métier)</th><th>QCM de compétences</th></tr></thead><tbody>
-${POSTES.map((p) => { const f = familleQcm(p); return `<tr><td>${e(p)}</td><td>${e(LABELS_IA[familleDuPoste(p)] ?? familleDuPoste(p))}</td><td><b>${e(f.label)}</b> : ${f.competences.map((c) => e(c.nom)).join(', ')} + tronc commun</td></tr>`; }).join('')}
+${POSTES.map((p) => { const f = familleQcm(p); return `<tr><td>${e(p)}</td><td>${e(LABELS_IA[familleDuPoste(p)] ?? familleDuPoste(p))}</td><td><b>${e(f.label)}</b> : ${f.competences.map((c) => e(c.nom)).join(', ')}${f.sansTronc ? ' (sans tronc commun)' : ' + tronc commun'}</td></tr>`; }).join('')}
 </tbody></table>`;
 
 const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Questions à valider – medicalstaff.tn</title>

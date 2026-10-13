@@ -196,7 +196,7 @@ r.get('/', async (c) => {
       <div class="card border-0 shadow-sm"><div class="card-body p-4">
         <h2 class="h5">{dernier ? 'Passer un nouveau QCM' : 'Comment ça marche ?'}</h2>
         <ul class="small">
-          <li><strong>{COMPETENCES_PAR_SESSION * QUESTIONS_PAR_COMPETENCE} questions tirées au hasard</strong> : {QUESTIONS_PAR_COMPETENCE} questions sur chacune de {COMPETENCES_PAR_SESSION} compétences, dont celles de votre métier (<strong>{famille.label}</strong>, d'après le poste recherché) et du tronc commun (hygiène, urgences, sécurité du patient, secret professionnel).</li>
+          <li><strong>{COMPETENCES_PAR_SESSION * QUESTIONS_PAR_COMPETENCE} questions tirées au hasard</strong> : {QUESTIONS_PAR_COMPETENCE} questions sur chacune de {COMPETENCES_PAR_SESSION} compétences, {famille.sansTronc ? <>toutes propres à votre métier (<strong>{famille.label}</strong>, d'après le poste recherché).</> : <>dont celles de votre métier (<strong>{famille.label}</strong>, d'après le poste recherché) et du tronc commun (hygiène, urgences, sécurité du patient, secret professionnel).</>}</li>
           <li><strong>{SECONDES_PAR_QUESTION} secondes par question</strong>, les questions s'enchaînent automatiquement, sans retour en arrière. Ne quittez pas la page : une question sans réponse est comptée fausse.</li>
           <li>Une compétence est <strong>validée uniquement avec un sans-faute</strong> ({SEUIL_VALIDATION} bonnes réponses sur {QUESTIONS_PAR_COMPETENCE}). Une compétence validée le reste ; les QCM suivants portent en priorité sur les compétences que vous n'avez pas encore validées.</li>
           <li>{MAX_SESSIONS_SEMAINE} QCM par semaine au maximum. Les bonnes réponses ne sont pas communiquées.</li>

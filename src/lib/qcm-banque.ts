@@ -7,7 +7,8 @@
 import { SUITE } from './qcm-suite';
 export type QuestionBrute = readonly [string, string, string, string, string];
 export type CompetenceQcm = { nom: string; questions: readonly QuestionBrute[] };
-export type FamilleQcm = { cle: string; label: string; competences: readonly CompetenceQcm[] };
+/** sansTronc : le QCM ne tire que les compétences du métier (métiers techniques non soignants) */
+export type FamilleQcm = { cle: string; label: string; competences: readonly CompetenceQcm[]; sansTronc?: boolean };
 
 /* ---------- Tronc commun : tous les métiers ---------- */
 export const TRONC_COMMUN: FamilleQcm = {
@@ -568,6 +569,9 @@ const QUALITE: CompetenceQcm = {
 /* Technicien biomédical : questions dans qcm-suite/biomedical.ts */
 const MAINTENANCE_BIO: CompetenceQcm = { nom: 'Maintenance des équipements biomédicaux', questions: [] };
 const SECURITE_BIO: CompetenceQcm = { nom: 'Sécurité électrique et matériovigilance', questions: [] };
+const ELECTRONIQUE_BIO: CompetenceQcm = { nom: 'Électronique et électrotechnique', questions: [] };
+const METROLOGIE_BIO: CompetenceQcm = { nom: 'Métrologie et contrôles qualité', questions: [] };
+const INFORMATIQUE_BIO: CompetenceQcm = { nom: 'Informatique et réseaux biomédicaux', questions: [] };
 
 const comp = (nom: string): CompetenceQcm => {
   const c = FAMILLES_BASE.flatMap((f) => f.competences).find((x) => x.nom === nom);
@@ -584,7 +588,8 @@ export const FAMILLES_QCM: readonly FamilleQcm[] = [
   { cle: 'panseur', label: 'Panseur(se)', competences: [comp('Pansements et soins des plaies'), comp('Prévention des escarres')] },
   { cle: 'encadrement', label: 'Encadrement des soins', competences: [ENCADREMENT, QUALITE, comp('Préparation et administration des médicaments'), comp('Surveillance des paramètres vitaux')] },
   { cle: 'encadrement_bloc', label: 'Encadrement du bloc opératoire', competences: [ENCADREMENT, QUALITE, comp('Bloc opératoire'), comp('Asepsie et stérilisation')] },
-  { cle: 'biomedical', label: 'Biomédical', competences: [MAINTENANCE_BIO, SECURITE_BIO] },
+  // Métier purement technique : pas de tronc commun (hygiène, urgences, éthique…)
+  { cle: 'biomedical', label: 'Biomédical', sansTronc: true, competences: [MAINTENANCE_BIO, SECURITE_BIO, ELECTRONIQUE_BIO, METROLOGIE_BIO, INFORMATIQUE_BIO] },
   { cle: 'encadrement_radio', label: "Encadrement de l'imagerie", competences: [ENCADREMENT, QUALITE, comp('Radioprotection'), comp('Scanner et IRM')] },
 ];
 
